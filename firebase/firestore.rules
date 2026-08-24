@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isUser(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isPartnerLinkParticipant() {
+      return isSignedIn() && (
+        request.auth.uid == resource.data.ownerId ||
+        request.auth.uid == resource.data.partnerId
+      );
+    }
+
+    // Own profile only — partners never get access via these paths
+    match /users/{userId} {
+      allow read, write: if isUser(userId);
+
+      match /symptomLogs/{logId} {
+        allow read, write: if isUser(userId);
+      }
+
+      match /cycleEvents/{eventId} {
+        allow read, write: if isUser(userId);
+      }
+
+      // Client reads only; Admin SDK (Express) writes insights
+      match /insights/{insightId} {
+        allow read: if isUser(userId);
+        allow write: if false;
+      }
+    }
+
+    // Link records only — never grants access to another user's clinical data
+    match /partnerLinks/{linkId} {
+      allow create: if isSignedIn()
+        && request.auth.uid == request.resource.data.ownerId
+        && request.resource.data.keys().hasAll(['ownerId', 'partnerId']);
+
+      allow read, delete: if isPartnerLinkParticipant();
+
+      allow update: if isPartnerLinkParticipant()
+        && request.resource.data.ownerId == resource.data.ownerId;
+    }
+  }
+}

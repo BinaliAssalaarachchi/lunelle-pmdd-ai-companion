@@ -1,0 +1,345 @@
+/* ==========================================================================
+   Lunelle Design System Reference
+   Extracted from Stitch HTML mockups — use as a source of truth for
+   colors, typography, spacing, radius, and shared component classes.
+   ========================================================================== */
+
+   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap');
+   @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+   
+   :root {
+     /* ------------------------------------------------------------------ */
+     /* Color tokens (Material 3 style naming)                             */
+     /* ------------------------------------------------------------------ */
+     --color-primary: #7d525f;
+     --color-on-primary: #ffffff;
+     --color-primary-container: #d9a5b3;
+     --color-on-primary-container: #603a46;
+     --color-primary-fixed: #ffd9e2;
+     --color-primary-fixed-dim: #eeb8c7;
+     --color-on-primary-fixed: #30111c;
+     --color-on-primary-fixed-variant: #623b47;
+     --color-inverse-primary: #eeb8c7;
+     --color-surface-tint: #7d525f;
+   
+     --color-secondary: #5f5c70;
+     --color-on-secondary: #ffffff;
+     --color-secondary-container: #e4dff7;
+     --color-on-secondary-container: #656276;
+     --color-secondary-fixed: #e4dff7;
+     --color-secondary-fixed-dim: #c8c4db;
+     --color-on-secondary-fixed: #1b1a2a;
+     --color-on-secondary-fixed-variant: #474558;
+   
+     --color-tertiary: #56615b;
+     --color-on-tertiary: #ffffff;
+     --color-tertiary-container: #aab5af;
+     --color-on-tertiary-container: #3d4742;
+     --color-tertiary-fixed: #dae5de;
+     --color-tertiary-fixed-dim: #bec9c2;
+     --color-on-tertiary-fixed: #141e19;
+     --color-on-tertiary-fixed-variant: #3f4944;
+   
+     --color-error: #ba1a1a;
+     --color-on-error: #ffffff;
+     --color-error-container: #ffdad6;
+     --color-on-error-container: #93000a;
+   
+     --color-background: #fcf9f8;
+     --color-on-background: #1b1c1c;
+     --color-surface: #fcf9f8;
+     --color-on-surface: #1b1c1c;
+     --color-surface-dim: #dcd9d9;
+     --color-surface-bright: #fcf9f8;
+     --color-surface-variant: #e4e2e1;
+     --color-on-surface-variant: #504446;
+   
+     --color-surface-container-lowest: #ffffff;
+     --color-surface-container-low: #f6f3f2;
+     --color-surface-container: #f0eded;
+     --color-surface-container-high: #eae7e7;
+     --color-surface-container-highest: #e4e2e1;
+   
+     --color-inverse-surface: #303030;
+     --color-inverse-on-surface: #f3f0f0;
+   
+     --color-outline: #827376;
+     --color-outline-variant: #d4c2c5;
+   
+     /* ------------------------------------------------------------------ */
+     /* Typography                                                         */
+     /* ------------------------------------------------------------------ */
+     --font-serif: 'Playfair Display', serif;   /* display / headline */
+     --font-sans: 'Inter', sans-serif;          /* body / label */
+   
+     --text-display-lg-size: 48px;
+     --text-display-lg-line: 1.1;
+     --text-display-lg-tracking: -0.02em;
+     --text-display-lg-weight: 700;
+   
+     --text-headline-lg-size: 32px;
+     --text-headline-lg-line: 1.2;
+     --text-headline-lg-weight: 600;
+   
+     --text-headline-lg-mobile-size: 28px;
+     --text-headline-lg-mobile-line: 1.2;
+     --text-headline-lg-mobile-weight: 600;
+   
+     --text-headline-md-size: 24px;
+     --text-headline-md-line: 1.3;
+     --text-headline-md-weight: 600;
+   
+     --text-body-lg-size: 18px;
+     --text-body-lg-line: 1.6;
+     --text-body-lg-weight: 400;
+   
+     --text-body-md-size: 16px;
+     --text-body-md-line: 1.5;
+     --text-body-md-weight: 400;
+   
+     --text-label-md-size: 14px;
+     --text-label-md-line: 1.4;
+     --text-label-md-tracking: 0.01em;
+     --text-label-md-weight: 500;
+   
+     --text-label-sm-size: 12px;
+     --text-label-sm-line: 1.2;
+     --text-label-sm-tracking: 0.05em;
+     --text-label-sm-weight: 600;
+   
+     /* ------------------------------------------------------------------ */
+     /* Spacing scale                                                      */
+     /* ------------------------------------------------------------------ */
+     --space-xs: 4px;
+     --space-base: 8px;
+     --space-sm: 12px;
+     --space-md: 24px;
+     --space-gutter: 24px;
+     --space-lg: 48px;
+     --space-xl: 80px;
+     --space-margin-mobile: 20px;
+     --space-margin-desktop: 120px;
+   
+     /* ------------------------------------------------------------------ */
+     /* Radius scale                                                       */
+     /* ------------------------------------------------------------------ */
+     --radius-default: 0.25rem;
+     --radius-lg: 0.5rem;
+     --radius-xl: 0.75rem;
+     --radius-2xl: 16px;
+     --radius-full: 9999px;
+   
+     /* ------------------------------------------------------------------ */
+     /* Shadows                                                            */
+     /* ------------------------------------------------------------------ */
+     --shadow-soft: 0px 10px 30px rgba(45, 45, 45, 0.05);
+   }
+   
+   /* ==========================================================================
+      Base
+      ========================================================================== */
+   
+   body {
+     background-color: var(--color-surface);
+     color: var(--color-on-surface);
+     font-family: var(--font-sans);
+     font-size: var(--text-body-md-size);
+     line-height: var(--text-body-md-line);
+     -webkit-font-smoothing: antialiased;
+   }
+   
+   .material-symbols-outlined {
+     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+   }
+   
+   /* ==========================================================================
+      Typography utility classes
+      ========================================================================== */
+   
+   .text-display-lg {
+     font-family: var(--font-serif);
+     font-size: var(--text-display-lg-size);
+     line-height: var(--text-display-lg-line);
+     letter-spacing: var(--text-display-lg-tracking);
+     font-weight: var(--text-display-lg-weight);
+   }
+   
+   .text-headline-lg {
+     font-family: var(--font-serif);
+     font-size: var(--text-headline-lg-size);
+     line-height: var(--text-headline-lg-line);
+     font-weight: var(--text-headline-lg-weight);
+   }
+   
+   .text-headline-md {
+     font-family: var(--font-serif);
+     font-size: var(--text-headline-md-size);
+     line-height: var(--text-headline-md-line);
+     font-weight: var(--text-headline-md-weight);
+   }
+   
+   .text-body-lg {
+     font-family: var(--font-sans);
+     font-size: var(--text-body-lg-size);
+     line-height: var(--text-body-lg-line);
+     font-weight: var(--text-body-lg-weight);
+   }
+   
+   .text-body-md {
+     font-family: var(--font-sans);
+     font-size: var(--text-body-md-size);
+     line-height: var(--text-body-md-line);
+     font-weight: var(--text-body-md-weight);
+   }
+   
+   .text-label-md {
+     font-family: var(--font-sans);
+     font-size: var(--text-label-md-size);
+     line-height: var(--text-label-md-line);
+     letter-spacing: var(--text-label-md-tracking);
+     font-weight: var(--text-label-md-weight);
+   }
+   
+   .text-label-sm {
+     font-family: var(--font-sans);
+     font-size: var(--text-label-sm-size);
+     line-height: var(--text-label-sm-line);
+     letter-spacing: var(--text-label-sm-tracking);
+     font-weight: var(--text-label-sm-weight);
+     text-transform: uppercase;
+   }
+   
+   /* ==========================================================================
+      Shared component classes (pulled from repeated patterns across pages)
+      ========================================================================== */
+   
+   /* Frosted glass card, used on auth screens, AI insight callouts, etc. */
+   .glass-panel {
+     background: rgba(255, 255, 255, 0.7);
+     backdrop-filter: blur(12px);
+     -webkit-backdrop-filter: blur(12px);
+     border: 1px solid rgba(252, 251, 249, 0.95);
+     box-shadow: var(--shadow-soft);
+   }
+   
+   /* Standard elevated card shadow used on bento-grid sections */
+   .card-shadow,
+   .soft-shadow {
+     box-shadow: var(--shadow-soft);
+   }
+   
+   /* Primary CTA button */
+   .btn-primary {
+     background-color: var(--color-primary-container);
+     color: var(--color-on-primary);
+     border-radius: var(--radius-xl);
+     transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+   }
+   .btn-primary:hover {
+     opacity: 0.9;
+     transform: translateY(-1px);
+   }
+   .btn-primary:active {
+     transform: translateY(1px);
+     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+   }
+   
+   /* Secondary button */
+   .btn-secondary {
+     background-color: var(--color-secondary-container);
+     color: var(--color-on-background);
+     border-radius: var(--radius-xl);
+   }
+   
+   /* Selectable chip (symptom tags, mood tags, quick-log) */
+   .chip-default,
+   .symptom-chip {
+     background-color: var(--color-secondary-container);
+     color: var(--color-on-secondary-fixed-variant);
+     border-radius: var(--radius-full);
+     transition: all 0.2s ease;
+   }
+   .chip-active,
+   .symptom-chip.active {
+     background-color: var(--color-primary-container);
+     color: var(--color-on-primary);
+   }
+   
+   /* Text input wrapper used on auth / settings forms */
+   .input-field,
+   .input-border {
+     border: 1px solid var(--color-tertiary-fixed);
+     border-radius: var(--radius-lg);
+     background-color: var(--color-surface);
+     transition: all 0.3s ease;
+   }
+   .input-field:focus-within,
+   .input-border:focus-within {
+     border-color: var(--color-primary-container);
+     box-shadow: 0 0 0 4px rgba(217, 165, 179, 0.2);
+   }
+   
+   /* Toggle switch (settings page) */
+   .toggle-checkbox:checked {
+     background-color: var(--color-primary-container);
+     border-color: var(--color-primary-container);
+   }
+   .toggle-checkbox:checked + .toggle-label {
+     transform: translateX(100%);
+   }
+   
+   /* Range slider (mental clarity, symptom intensity) */
+   input[type='range'] {
+     -webkit-appearance: none;
+     width: 100%;
+     background: transparent;
+   }
+   input[type='range']::-webkit-slider-runnable-track {
+     width: 100%;
+     height: 4px;
+     cursor: pointer;
+     background: var(--color-tertiary-fixed);
+     border-radius: 2px;
+   }
+   input[type='range']::-webkit-slider-thumb {
+     -webkit-appearance: none;
+     height: 20px;
+     width: 20px;
+     border-radius: 50%;
+     background: var(--color-primary-container);
+     cursor: pointer;
+     margin-top: -8px;
+     box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+   }
+   
+   /* Phase accent tokens used on dashboard cycle rings / charts */
+   .accent-follicular,
+   .bg-follicular {
+     color: var(--color-tertiary-fixed);
+     background-color: var(--color-tertiary-fixed);
+   }
+   .accent-luteal {
+     color: #f4e1e1;
+   }
+   
+   /* Chart line/area colors (mood = primary, energy = follicular sage) */
+   .chart-line-mood {
+     stroke: var(--color-primary-container);
+     stroke-width: 3;
+     fill: none;
+     stroke-linecap: round;
+     stroke-linejoin: round;
+   }
+   .chart-line-energy {
+     stroke: var(--color-tertiary-fixed);
+     stroke-width: 3;
+     fill: none;
+     stroke-linecap: round;
+     stroke-linejoin: round;
+   }
+   .chart-area-mood {
+     fill: rgba(217, 165, 179, 0.1);
+   }
+   .chart-area-energy {
+     fill: rgba(217, 228, 221, 0.1);
+   }

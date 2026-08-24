@@ -1,0 +1,22 @@
+{
+  "name": "lunelle-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch --watch-preserve-output --watch-path=src/index.js --watch-path=src/routes --watch-path=src/services --watch-path=src/middleware --watch-path=src/lib --watch-path=../shared src/index.js",
+    "start": "node src/index.js",
+    "seed": "node src/scripts/seed.js",
+    "repair:cycle": "node src/scripts/repairCycleData.js",
+    "verify:coach-evidence": "node src/scripts/verify-coach-evidence.js",
+    "verify:coach-safety": "node src/scripts/verify-coach-safety.js",
+    "verify:coach-api": "node src/scripts/verify-coach-api.js",
+    "verify:coach-ui-flow": "node src/scripts/verify-coach-ui-flow.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.0.1",
+    "firebase-admin": "^13.0.2"
+  }
+}
