@@ -1,0 +1,14 @@
+.git
+.github
+.firebase
+.agents
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+!.env.example
+client
+docs
+**/*.md
+**/coverage
+**/*.log

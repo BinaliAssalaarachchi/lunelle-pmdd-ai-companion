@@ -1,3 +1,5 @@
+import { apiUrl } from './apiUrl.js';
+
 export const COACH_DISCLAIMER =
   'This helps you describe your own logged data. It is not medical advice, a diagnosis, or a substitute for care.';
 
@@ -51,7 +53,7 @@ export function buildCoachRequest(message, turns = []) {
 
 export async function sendCoachMessage({ token, message, turns = [] }) {
   const body = buildCoachRequest(message, turns);
-  const response = await fetch('/api/coach/message', {
+  const response = await fetch(apiUrl('/api/coach/message'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

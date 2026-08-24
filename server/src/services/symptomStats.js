@@ -108,6 +108,9 @@ export function buildSymptomFrequency(logs) {
   const sorted = sortLogsByDate(logs);
 
   return SYMPTOMS.map((symptom) => {
+    const values = sorted.map(
+      (log) => Number(log.symptoms?.[symptom.id]) || SEVERITY_MIN,
+    );
     const daysPresent = sorted.filter((log) =>
       isSeverityPresent(log.symptoms?.[symptom.id]),
     ).length;
@@ -128,6 +131,8 @@ export function buildSymptomFrequency(logs) {
       category: symptom.category,
       daysPresent,
       totalDays: sorted.length,
+      averageSeverity: Number(average(values).toFixed(2)),
+      maxSeverity: values.length ? Math.max(...values) : SEVERITY_MIN,
       byPhase,
     };
   });

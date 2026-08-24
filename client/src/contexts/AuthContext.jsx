@@ -15,6 +15,7 @@ import {
   DEMO_MODE_UNAVAILABLE_MESSAGE,
   isDemoAccountUser,
 } from '../lib/demoAccount.js';
+import { apiUrl } from '../lib/apiUrl.js';
 import { auth, db, isFirebaseConfigured } from '../lib/firebase.js';
 
 const AuthContext = createContext(null);
@@ -159,7 +160,7 @@ export function AuthProvider({ children }) {
         }
 
         const token = await auth.currentUser.getIdToken();
-        const gate = await fetch('/api/account/password', {
+        const gate = await fetch(apiUrl('/api/account/password'), {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,
@@ -194,7 +195,7 @@ export function AuthProvider({ children }) {
           throw new Error(DEMO_MODE_UNAVAILABLE_MESSAGE);
         }
         const token = await auth.currentUser.getIdToken(true);
-        const response = await fetch('/api/account', {
+        const response = await fetch(apiUrl('/api/account'), {
           method: 'DELETE',
           headers: {
             Authorization: `Bearer ${token}`,

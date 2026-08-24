@@ -1,4 +1,4 @@
-import { DEMO_USER } from '../../../shared/constants.js';
+import { DEMO_USER, SEVERITY_MIN } from '../../../shared/constants.js';
 import {
   average,
   averageImpact,
@@ -9,6 +9,29 @@ import {
   buildSymptomFrequency,
   sortLogsByDate,
 } from './symptomStats.js';
+
+function highestRecordedSeverity(logs) {
+  let max = SEVERITY_MIN;
+  for (const log of logs) {
+    for (const value of Object.values(log.symptoms || {})) {
+      const n = Number(value);
+      if (Number.isFinite(n) && n > max) max = n;
+    }
+  }
+  return max;
+}
+
+/** Count cycle wraps from logged cycle-day sequences (additive overview field). */
+function cyclesCoveredFromLogs(logs) {
+  if (!logs.length) return 0;
+  let count = 1;
+  for (let i = 1; i < logs.length; i += 1) {
+    const prev = Number(logs[i - 1].cycleDay) || 0;
+    const curr = Number(logs[i].cycleDay) || 0;
+    if (curr > 0 && prev > 0 && curr < prev) count += 1;
+  }
+  return count;
+}
 
 export function buildReportPayload({
   logs,
@@ -56,12 +79,14 @@ export function buildReportPayload({
     },
     overview: {
       daysTracked: sorted.length,
+      cyclesCovered: cyclesCoveredFromLogs(sorted),
       averageSeverity: Number(
         average(sorted.map((log) => averageSeverity(log.symptoms))).toFixed(2),
       ),
       averageImpact: Number(
         average(sorted.map((log) => averageImpact(log.impact))).toFixed(2),
       ),
+      highestSeverity: highestRecordedSeverity(sorted),
     },
     phaseComparison,
     symptomFrequency,

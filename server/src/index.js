@@ -7,6 +7,11 @@ import accountRouter from './routes/account.js';
 import coachRouter from './routes/coach.js';
 import partnerRouter from './routes/partner.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import {
+  createCorsOriginDelegate,
+  describeCorsMode,
+  parseAllowedOrigins,
+} from './lib/corsConfig.js';
 
 const app = express();
 const port = Number(process.env.PORT) || 3001;
@@ -18,7 +23,14 @@ process.on('unhandledRejection', (reason) => {
   console.error('unhandledRejection:', reason);
 });
 
-app.use(cors());
+app.use(
+  cors({
+    origin: createCorsOriginDelegate(process.env),
+    methods: ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Authorization', 'Content-Type', 'Accept'],
+    maxAge: 86400,
+  }),
+);
 app.use(express.json({ limit: '2mb' }));
 
 app.get('/api/health', (_req, res) => {
@@ -41,5 +53,15 @@ app.use('/api/partner', partnerRouter);
 app.use(errorHandler);
 
 app.listen(port, '0.0.0.0', () => {
-  console.log(`Lunelle API listening on http://127.0.0.1:${port}`);
+  if (
+    process.env.NODE_ENV === 'production' &&
+    parseAllowedOrigins(process.env.CORS_ALLOWED_ORIGINS).length === 0
+  ) {
+    console.warn(
+      'CORS_ALLOWED_ORIGINS is empty in production; browser cross-origin requests will be denied.',
+    );
+  }
+  console.log(
+    `Lunelle API listening on 0.0.0.0:${port} (CORS: ${describeCorsMode(process.env)})`,
+  );
 });

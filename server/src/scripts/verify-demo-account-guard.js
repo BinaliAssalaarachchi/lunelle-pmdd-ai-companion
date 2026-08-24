@@ -43,6 +43,10 @@ function run() {
     );
     assert(!isDemoAccountEmail('real@example.com', {}), 'real user not demo');
     assert(
+      !isDemoAccountEmail('partner@demo.lunelle.app', {}),
+      'demo partner is not the protected Maya account',
+    );
+    assert(
       isDemoAccountEmail('custom@demo.test', {
         DEMO_ACCOUNT_EMAIL: 'custom@demo.test',
       }),
@@ -71,6 +75,17 @@ function run() {
     );
     assert(allowed.out.statusCode === null, 'no response for real user');
     report.cases.allowReal = { ok: true };
+
+    const partner = mockRes();
+    assert(
+      rejectIfDemoAccount(
+        { userEmail: 'partner@demo.lunelle.app' },
+        partner,
+      ) === false,
+      'demo partner not blocked by demo account guard',
+    );
+    assert(partner.out.statusCode === null, 'no 403 for demo partner');
+    report.cases.allowDemoPartner = { ok: true };
 
     console.log(JSON.stringify({ ok: true, cases: report.cases }, null, 2));
   } catch (error) {

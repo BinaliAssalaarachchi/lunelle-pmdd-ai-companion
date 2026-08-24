@@ -8,6 +8,9 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  optimizeDeps: {
+    include: ['@react-pdf/renderer'],
+  },
   server: {
     port: 5173,
     fs: {

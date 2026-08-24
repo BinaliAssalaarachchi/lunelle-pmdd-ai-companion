@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { collection, doc, getDoc, getDocs, orderBy, query } from 'firebase/firestore';
 import { addDays, formatDate } from '../../../shared/cycle.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { apiUrl } from '../lib/apiUrl.js';
 import { db, isFirebaseConfigured } from '../lib/firebase.js';
 import { getLocalInsights } from '../lib/localInsights.js';
 import {
@@ -66,7 +67,7 @@ export function useReports() {
 
       try {
         const token = await getIdToken();
-        const response = await fetch('/api/reports/generate', {
+        const response = await fetch(apiUrl('/api/reports/generate'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -88,9 +89,9 @@ export function useReports() {
 
         setReport(data);
         if (format === 'clinician') {
-          downloadClinicianPdf(data);
+          await downloadClinicianPdf(data);
         } else {
-          downloadPersonalPdf(data);
+          await downloadPersonalPdf(data);
         }
         return data;
       } catch (err) {
@@ -113,7 +114,13 @@ export function useReports() {
     error,
     logCount: availableLogs.length,
     generateReport,
-    downloadPersonal: () => report && downloadPersonalPdf(report),
-    downloadClinician: () => report && downloadClinicianPdf(report),
+    downloadPersonal: () => {
+      if (!report) return;
+      downloadPersonalPdf(report).catch((err) => setError(err.message));
+    },
+    downloadClinician: () => {
+      if (!report) return;
+      downloadClinicianPdf(report).catch((err) => setError(err.message));
+    },
   };
 }

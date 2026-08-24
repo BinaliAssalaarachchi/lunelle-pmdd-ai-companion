@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { addDays, formatDate } from '../../../shared/cycle.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { apiUrl } from '../lib/apiUrl.js';
 import { prependLocalInsight } from '../lib/localInsights.js';
 
 const MIN_LOG_DAYS = 7;
@@ -49,8 +50,8 @@ export function useInsights() {
       const headers = { Authorization: `Bearer ${token}` };
 
       const [latestRes, statusRes] = await Promise.all([
-        fetch('/api/insights/latest', { headers }),
-        fetch('/api/insights/status', { headers }),
+        fetch(apiUrl('/api/insights/latest'), { headers }),
+        fetch(apiUrl('/api/insights/status'), { headers }),
       ]);
 
       const latestData = await latestRes.json().catch(() => ({}));
@@ -106,7 +107,7 @@ export function useInsights() {
     setError(null);
     try {
       const token = await getIdToken();
-      const response = await fetch('/api/insights/history?limit=20', {
+      const response = await fetch(apiUrl('/api/insights/history?limit=20'), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json().catch(() => ({}));
@@ -134,7 +135,9 @@ export function useInsights() {
       try {
         const token = await getIdToken();
         const response = await fetch(
-          `/api/insights/history?limit=20&include=${encodeURIComponent(id)}`,
+          apiUrl(
+            `/api/insights/history?limit=20&include=${encodeURIComponent(id)}`,
+          ),
           { headers: { Authorization: `Bearer ${token}` } },
         );
         const data = await response.json().catch(() => ({}));
@@ -173,7 +176,7 @@ export function useInsights() {
       try {
         const token = await getIdToken();
         const today = formatDate(new Date());
-        const response = await fetch('/api/insights/generate', {
+        const response = await fetch(apiUrl('/api/insights/generate'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

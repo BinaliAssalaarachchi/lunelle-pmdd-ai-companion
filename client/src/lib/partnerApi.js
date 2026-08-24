@@ -9,6 +9,7 @@ import {
   buildPartnerAcceptBody,
   buildPartnerDeclineBody,
 } from './partnerConnectUi.js';
+import { apiUrl } from './apiUrl.js';
 
 /** Human-readable permission copy for the owner settings UI. */
 export const PARTNER_PERMISSION_UI = [
@@ -50,7 +51,7 @@ export const PARTNER_PERMISSION_UI = [
 ];
 
 async function partnerRequest(path, { token, method = 'GET', body } = {}) {
-  const response = await fetch(path, {
+  const response = await fetch(apiUrl(path), {
     method,
     headers: {
       'Content-Type': 'application/json',
