@@ -107,7 +107,17 @@ function validStructured(evidence) {
         },
       ],
     },
-    doctorScript: `I've noticed my anxiety increases from around 1.4/${SEVERITY_MAX} earlier in my cycle to around 4.9/${SEVERITY_MAX} about a week before my period.`,
+    doctorScript:
+      "Doctor, I've noticed that I start feeling much more anxious and tense about a week before my period. I've been tracking my symptoms, and I've noticed this during the time I've been tracking. I'd like to talk with you about whether this pattern could be related to my menstrual cycle.",
+    mentionPoints: [
+      'When you first noticed this in the days you have been tracking',
+      'That it tends to begin about a week before your period',
+    ],
+    detailExplanation: `My tracking shows this tends to be much lower earlier in my cycle and considerably stronger about a week before my period. The logged averages were about 1.4/${SEVERITY_MAX} earlier and 4.9/${SEVERITY_MAX} during that later window.`,
+    doctorQuestions: [
+      'Could this pattern be related to my menstrual cycle?',
+      'What would be useful for me to track going forward?',
+    ],
     followUp: 'Would you like this to sound more like your own words?',
     safety: {
       disclaimer: 'not medical advice',
@@ -148,7 +158,14 @@ async function main() {
     // 2. valid evidence citation → accepted
     const validCitation = validateCoachResponse(validStructured(richEvidence), richEvidence);
     assert(validCitation.usedFallback === false, 'valid citation rejected');
-    assert(allowed.doctorScript.includes(`4.9/${SEVERITY_MAX}`), 'missing /6 citation');
+    assert(
+      allowed.detailExplanation.includes(`4.9/${SEVERITY_MAX}`),
+      'missing /6 citation in supporting detail',
+    );
+    assert(
+      !allowed.doctorScript.includes(`4.9/${SEVERITY_MAX}`),
+      'spoken script still score-led',
+    );
     report.cases.validEvidenceCitation = { ok: true };
 
     // 3. unsupported number → rejected
@@ -301,14 +318,18 @@ async function main() {
     assert(allowed.reflection.userReported.length > 0, 'missing reflection');
     assert(allowed.evidence.facts.length > 0, 'missing evidence facts');
     assert(allowed.doctorScript, 'missing doctorScript');
+    assert(Array.isArray(allowed.mentionPoints) && allowed.mentionPoints.length > 0, 'missing mentionPoints');
+    assert(allowed.detailExplanation, 'missing detailExplanation');
+    assert(Array.isArray(allowed.doctorQuestions) && allowed.doctorQuestions.length > 0, 'missing doctorQuestions');
     assert(allowed.followUp, 'missing followUp');
     assert(allowed.safety.disclaimer.includes('not medical advice'), 'missing disclaimer');
     report.cases.validStructured = { ok: true };
 
     // 13. 1–6 values remain /6
     assert(SEVERITY_MIN === 1 && SEVERITY_MAX === 6, 'scale drifted');
-    assert(allowed.doctorScript.includes('/6'), 'script not on /6 scale');
-    assert(!allowed.doctorScript.includes('/4'), 'legacy /4 scale leaked');
+    assert(allowed.detailExplanation.includes('/6'), 'supporting detail not on /6 scale');
+    assert(!allowed.detailExplanation.includes('/4'), 'legacy /4 scale leaked');
+    assert(!allowed.doctorScript.includes('/4'), 'legacy /4 scale leaked into script');
     report.cases.scaleRemainsOverSix = { ok: true };
 
     // 14–15. private notes and raw logs never in Gemini context

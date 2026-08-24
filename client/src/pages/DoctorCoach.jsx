@@ -42,9 +42,9 @@ export default function DoctorCoach() {
           <AiGeneratedLabel />
         </div>
         <p className="mt-3 max-w-2xl text-base leading-relaxed text-moss">
-          This helps you turn what you’ve logged into a clear description you
-          can share with a healthcare professional. It does not diagnose or
-          recommend treatment.
+          This helps you find natural words for an appointment — what you can
+          actually say, mention, and ask. It does not diagnose or recommend
+          treatment, and it is not a copy of your clinician report.
         </p>
       </header>
 
@@ -109,7 +109,7 @@ export default function DoctorCoach() {
           />
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-faint">
-              Preview — redesigned reply
+              Preview — appointment briefing
             </p>
             <CoachReplyPreview />
           </div>
@@ -140,10 +140,10 @@ export default function DoctorCoach() {
           <div className="flex flex-col items-center gap-4 text-center">
             <LoadingDots />
             <p className="text-sm font-medium text-ink">
-              Grounding this in your tracking…
+              Finding words you can actually say…
             </p>
             <p className="max-w-md text-sm leading-relaxed text-moss">
-              We only use verified numbers from your saved logs.
+              We only use what you’ve logged — never invented patterns.
             </p>
             {slowHint ? (
               <p className="text-sm text-faint">

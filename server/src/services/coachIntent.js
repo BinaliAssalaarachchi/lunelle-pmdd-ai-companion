@@ -60,7 +60,7 @@ const DOCTOR_RE =
   /\b(doctor|gp|clinician|appointment|healthcare|health care|ob-?gyn|psychiatrist|therapist)\b/i;
 
 const COMMUNICATION_RE =
-  /\b(explain|describe|wording|how to say|help me (tell|say|ask|talk|put)|put this into words|script|what (could|should) i (say|ask|tell)|formulate|rephrase|rewrite|make it sound)\b/i;
+  /\b(explain|describe|wording|how to say|how (?:do|should) i explain|help me (tell|say|ask|talk|put|prepare)|put this into words|script|what (?:could|should) i (say|ask|tell)|formulate|rephrase|rewrite|make it sound|prepare for (?:my )?(?:appointment|visit|doctor)|talk to my doctor)\b/i;
 
 const TRACKING_RE =
   /\b(track(?:ed|ing)?|logged|log(?:s)?|cycle|luteal|period|symptom|anxiety|mood|insight|pattern)\b/i;
@@ -143,6 +143,7 @@ function looksOnTopic(text) {
   return (
     DOCTOR_RE.test(text) ||
     COMMUNICATION_RE.test(text) ||
+    DESCRIBE_DATA_RE.test(text) ||
     TRACKING_RE.test(text) ||
     extractMentionedSymptoms(text).length > 0 ||
     extractMentionedImpact(text).length > 0

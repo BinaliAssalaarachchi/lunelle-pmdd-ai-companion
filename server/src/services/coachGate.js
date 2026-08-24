@@ -1,7 +1,6 @@
-import { detectSevereDistress } from '../../../shared/severeDistress.js';
 import { SEVERITY_MAX } from '../../../shared/constants.js';
+import { detectSevereDistress } from '../../../shared/severeDistress.js';
 import {
-  catalogSymptomLabel,
   classifyCoachIntent,
   COACH_INTENTS,
   detectCrisisLanguage,
@@ -9,6 +8,7 @@ import {
   extractUnsupportedSymptomMentions,
   extractUserNumericClaims,
 } from './coachIntent.js';
+import { buildAppointmentPack } from './coachAppointment.js';
 import {
   COACH_CRISIS_NOTE,
   COACH_DISCLAIMER,
@@ -56,25 +56,11 @@ function verifiedLayer(cards) {
   }));
 }
 
-function doctorScriptFromCards(cards, symptomId) {
-  const comparison = cards.find(
-    (card) =>
-      card.kind === 'symptom_comparison' &&
-      (!symptomId || card.id === symptomId) &&
-      card.comparisonId?.includes('premenstrual_week'),
-  ) || cards.find(
-    (card) =>
-      card.kind === 'symptom_comparison' && (!symptomId || card.id === symptomId),
-  );
-  if (!comparison) return null;
-
-  const label = comparison.shortLabel || catalogSymptomLabel(comparison.id);
-  const week = comparison.higherWindowId === 'premenstrual_week';
-  const higherPhrase = week
-    ? 'about a week before my period'
-    : 'later in my cycle';
-
-  return `I've noticed that my ${label.toLowerCase()} becomes significantly stronger ${higherPhrase}. In my tracking, it usually increases from around ${comparison.lowerAverage}/${SEVERITY_MAX} earlier in my cycle to around ${comparison.higherAverage}/${SEVERITY_MAX} during that window.`;
+function appointmentPackFromCards(cards, symptomId, evidence) {
+  return buildAppointmentPack(cards, {
+    symptomId,
+    source: evidence?.source,
+  });
 }
 
 function baseResult({
@@ -99,6 +85,9 @@ function baseResult({
       kind: extras.kind || intent,
       verifiedSummary: extras.verifiedSummary || null,
       doctorScript: extras.doctorScript || null,
+      mentionPoints: extras.mentionPoints || [],
+      detailExplanation: extras.detailExplanation || null,
+      doctorQuestions: extras.doctorQuestions || [],
       redirect: extras.redirect || null,
       offer: extras.offer || null,
       disclaimer: COACH_DISCLAIMER,
@@ -121,8 +110,11 @@ function medicalRedirect(message, evidence) {
         'I can’t diagnose a condition, confirm a diagnosis, or recommend medication or treatment. That’s a question for a qualified healthcare professional.',
       offer:
         'I can help you turn what you’ve logged into a clear description or question to take to your doctor.',
-      suggestedWording: null,
-      verified: [],
+      doctorQuestions: [
+        'Could this pattern be related to my menstrual cycle?',
+        'What would be useful for me to track going forward?',
+        'Are there other possible causes we should consider?',
+      ],
     },
   });
 }
@@ -157,7 +149,7 @@ function insufficientResult(message, evidence, reason) {
       verifiedSummary:
         'There is not enough logged data yet to describe a reliable pattern.',
       redirect:
-        'I won’t invent a pattern. Keep logging across more days of your cycle, including quieter days, then we can help you put the numbers into words for your clinician.',
+        'I won’t invent a pattern. Keep logging across more days of your cycle, including quieter days, then we can help you find words for your clinician.',
       suggestedWording: null,
     },
   });
@@ -225,7 +217,11 @@ function communicationResult(message, evidence, classified) {
     }
   }
 
-  const script = doctorScriptFromCards(quoteable, mentioned[0]);
+  const pack = appointmentPackFromCards(
+    mentioned.length ? quoteable : evidence?.factCards || quoteable,
+    mentioned[0],
+    evidence,
+  );
   const primary = quoteable.find((card) => card.kind === 'symptom_comparison');
 
   return baseResult({
@@ -238,13 +234,16 @@ function communicationResult(message, evidence, classified) {
       kind: 'coach_card',
       userReported: [...userLayer(message), ...conflicts],
       verified,
-      suggestedWording: script,
+      suggestedWording: pack.doctorScript,
       verifiedSummary: primary
         ? `Looking at your logged data, ${primary.shortLabel} averaged ${primary.display}.`
         : verified[0]?.text || null,
-      doctorScript: script,
-      offer: script
-        ? 'Would you like to make that sound more like your own words?'
+      doctorScript: pack.doctorScript,
+      mentionPoints: pack.mentionPoints,
+      detailExplanation: pack.detailExplanation,
+      doctorQuestions: pack.doctorQuestions,
+      offer: pack.doctorScript
+        ? 'Would you like this to sound more like your own words?'
         : null,
     },
   });

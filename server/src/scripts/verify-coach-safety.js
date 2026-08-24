@@ -119,19 +119,74 @@ async function main() {
     assert(supported.reply.disclaimer.includes('not medical advice'), 'missing disclaimer');
     report.cases.supportedCommunication = { intent: supported.intent, ok: true };
 
+    for (const ask of [
+      'How should I explain my symptoms to my doctor?',
+      'What should I tell my doctor about my anxiety?',
+      'Can you help me prepare for my appointment?',
+    ]) {
+      const classified = classifyCoachIntent(ask);
+      assert(
+        classified.intent === COACH_INTENTS.FORMULATE_FOR_DOCTOR,
+        `expected appointment intent for: ${ask}`,
+      );
+    }
+    assert(
+      classifyCoachIntent('What does my data show?').intent ===
+        COACH_INTENTS.DESCRIBE_TRACKED_DATA,
+      'data-show intent',
+    );
+
     // 2. request involving actual tracked anxiety data
     const anxiety = evaluateCoachTurn({
       message: 'Help me describe my tracked anxiety to my doctor.',
       evidence: richEvidence,
     });
-    assert(anxiety.reply.doctorScript.includes('1.4/6'), 'anxiety script missing 1.4/6');
-    assert(anxiety.reply.doctorScript.includes('4.9/6'), 'anxiety script missing 4.9/6');
+    assert(anxiety.reply.doctorScript.includes("I've noticed"), 'anxiety script missing first-person noticing');
+    assert(/anxious|tense/i.test(anxiety.reply.doctorScript), 'anxiety script not about anxiety');
+    assert(
+      !anxiety.reply.doctorScript.includes('1.4/6'),
+      'spoken script should not lead with 1.4/6',
+    );
+    assert(
+      !anxiety.reply.doctorScript.includes('4.9/6'),
+      'spoken script should not lead with 4.9/6',
+    );
+    assert(anxiety.reply.detailExplanation.includes('1.4/6'), 'detail missing 1.4/6');
+    assert(anxiety.reply.detailExplanation.includes('4.9/6'), 'detail missing 4.9/6');
     assert(anxiety.reply.verifiedSummary.includes('4.9/6 vs 1.4/6'), 'anxiety summary');
     assert(!anxiety.reply.doctorScript.includes('5.2'), 'invented anxiety average');
+    assert(anxiety.reply.mentionPoints.length > 0, 'missing mention points');
+    assert(anxiety.reply.doctorQuestions.length > 0, 'missing doctor questions');
+    assert(!/every cycle/i.test(anxiety.reply.doctorScript), 'claimed every cycle');
     report.cases.trackedAnxiety = {
       script: anxiety.reply.doctorScript,
+      detail: anxiety.reply.detailExplanation,
       ok: true,
     };
+
+    for (const ask of [
+      'How should I explain my symptoms to my doctor?',
+      'What should I tell my doctor about my anxiety?',
+      'Can you help me prepare for my appointment?',
+    ]) {
+      const turn = evaluateCoachTurn({ message: ask, evidence: richEvidence });
+      assert(turn.reply.doctorScript, `missing script for: ${ask}`);
+      assert(
+        /^Doctor, I've noticed/i.test(turn.reply.doctorScript),
+        `script not first-person for: ${ask}`,
+      );
+      assert(
+        !/\d+(?:\.\d+)?\s*\/\s*6/.test(turn.reply.doctorScript),
+        `score-led script for: ${ask}`,
+      );
+      assert(turn.reply.mentionPoints.length > 0, `missing mentions for: ${ask}`);
+      assert(turn.reply.doctorQuestions.length > 0, `missing questions for: ${ask}`);
+      assert(
+        /\d+(?:\.\d+)?\s*\/\s*6/.test(turn.reply.detailExplanation || ''),
+        `supporting numbers missing for: ${ask}`,
+      );
+    }
+    report.cases.appointmentQuestions = { ok: true };
 
     // 3. unsupported symptom
     const unsupported = evaluateCoachTurn({

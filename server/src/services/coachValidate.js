@@ -1,4 +1,5 @@
 import { SEVERITY_MAX, SEVERITY_MIN } from '../../../shared/constants.js';
+import { buildAppointmentPack } from './coachAppointment.js';
 
 export const COACH_DISCLAIMER =
   'This helps you describe your own logged data. It is not medical advice, a diagnosis, or a substitute for care.';
@@ -44,6 +45,14 @@ const NUMBER_RE = /\b\d+(?:\.\d+)?\b/g;
 function asCleanString(value, maxLen = 1200) {
   if (typeof value !== 'string') return '';
   return value.replace(/\s+/g, ' ').trim().slice(0, maxLen);
+}
+
+function asStringList(value, maxItems = 6, maxLen = 240) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => asCleanString(item, maxLen))
+    .filter(Boolean)
+    .slice(0, maxItems);
 }
 
 export function containsBannedCoachLanguage(text) {
@@ -175,7 +184,7 @@ export function validateCoachCitations(text, evidence) {
   }
 
   const lateMisuse =
-    /\bweek before your period\b/i.test(text || '') &&
+    /\bweek before (?:your|my) period\b/i.test(text || '') &&
     !evidence?.factCards?.some(
       (card) =>
         card.windowId === 'premenstrual_week' ||
@@ -238,12 +247,18 @@ function modelAuthoredText(raw) {
     ...(Array.isArray(raw?.evidence?.facts) ? raw.evidence.facts : []),
     ...(Array.isArray(raw?.groundedFacts) ? raw.groundedFacts : []),
   ];
+  const lists = [
+    ...(Array.isArray(raw?.mentionPoints) ? raw.mentionPoints : []),
+    ...(Array.isArray(raw?.doctorQuestions) ? raw.doctorQuestions : []),
+  ];
   return [
     raw?.doctorScript,
+    raw?.detailExplanation,
     raw?.verifiedSummary,
     raw?.rewriteScript,
     raw?.followUp,
     raw?.redirect,
+    ...lists,
     ...facts.map(factText),
   ]
     .filter(Boolean)
@@ -279,6 +294,9 @@ export function buildCoachFallback(evidence, reason = 'unvalidated_response') {
   const comparison = (evidence?.factCards || []).find(
     (card) => card.kind === 'symptom_comparison' && card.notableIncrease,
   );
+  const pack = buildAppointmentPack(evidence?.factCards || [], {
+    source: evidence?.source,
+  });
   const verified = comparison
     ? `Your tracking shows ${comparison.shortLabel} at ${comparison.display} (${comparison.higherWindowId.replace(/_/g, ' ')} vs ${comparison.lowerWindowId.replace(/_/g, ' ')}).`
     : enough
@@ -300,14 +318,15 @@ export function buildCoachFallback(evidence, reason = 'unvalidated_response') {
             },
           ]
         : [],
-      suggestedWording: null,
+      suggestedWording: pack.doctorScript,
     },
     reply: {
       kind: 'fallback',
       verifiedSummary: verified,
-      doctorScript: enough && comparison
-        ? `A clear way you could describe this to your doctor is: “I've noticed ${comparison.shortLabel} is higher in ${comparison.higherWindowId.replace(/_/g, ' ')} (${comparison.higherAverage}/${SEVERITY_MAX}) than earlier in my cycle (${comparison.lowerAverage}/${SEVERITY_MAX}).”`
-        : null,
+      doctorScript: enough && comparison ? pack.doctorScript : null,
+      mentionPoints: enough && comparison ? pack.mentionPoints : [],
+      detailExplanation: enough && comparison ? pack.detailExplanation : null,
+      doctorQuestions: pack.doctorQuestions,
       redirect: enough
         ? null
         : 'Keep logging across more days of your cycle, then we can help you put a pattern into words for your clinician.',
@@ -329,7 +348,9 @@ export function validateCoachResponse(raw, evidence) {
   const text = modelAuthoredText(raw);
   const language = validateCoachLanguage(text);
   const citations = validateCoachCitations(text, evidence);
-  const person = validateDoctorScriptPerson(raw?.doctorScript || '');
+  const person = validateDoctorScriptPerson(
+    [raw?.doctorScript, raw?.detailExplanation].filter(Boolean).join('\n'),
+  );
   const issues = [
     ...language.issues,
     ...citations.issues,
@@ -347,7 +368,16 @@ export function validateCoachResponse(raw, evidence) {
   }
 
   const doctorScript = scrubBannedCoachLanguage(
-    asCleanString(raw?.doctorScript || raw, 800),
+    asCleanString(raw?.doctorScript || raw, 900),
+  );
+  const detailExplanation = scrubBannedCoachLanguage(
+    asCleanString(raw?.detailExplanation, 500),
+  );
+  const mentionPoints = asStringList(raw?.mentionPoints, 6, 240).map(
+    (item) => scrubBannedCoachLanguage(item),
+  );
+  const doctorQuestions = asStringList(raw?.doctorQuestions, 4, 180).map(
+    (item) => scrubBannedCoachLanguage(item),
   );
 
   return {
@@ -363,6 +393,9 @@ export function validateCoachResponse(raw, evidence) {
       kind: 'validated',
       verifiedSummary: asCleanString(raw?.verifiedSummary, 420) || null,
       doctorScript: doctorScript || null,
+      mentionPoints,
+      detailExplanation: detailExplanation || null,
+      doctorQuestions,
       rewriteScript: asCleanString(raw?.rewriteScript, 800) || null,
       followUp: asCleanString(raw?.followUp, 240) || null,
       disclaimer: COACH_DISCLAIMER,

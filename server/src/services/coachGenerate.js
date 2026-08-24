@@ -1,4 +1,5 @@
 import { SEVERITY_MAX, SEVERITY_MIN } from '../../../shared/constants.js';
+import { coverageFromSource } from './coachAppointment.js';
 import { extractMentionedSymptoms } from './coachIntent.js';
 import { evaluateCoachTurn } from './coachGate.js';
 import {
@@ -14,7 +15,7 @@ import {
   sleep,
 } from './gemini.js';
 
-export const COACH_PROMPT_VERSION = 'lunelle-coach-v2';
+export const COACH_PROMPT_VERSION = 'lunelle-coach-v3';
 export const COACH_GENERATION_MODE = 'coach_structured';
 
 export const COACH_RESPONSE_SCHEMA = {
@@ -58,6 +59,15 @@ export const COACH_RESPONSE_SCHEMA = {
       required: ['facts'],
     },
     doctorScript: { type: 'string' },
+    mentionPoints: {
+      type: 'array',
+      items: { type: 'string' },
+    },
+    detailExplanation: { type: 'string' },
+    doctorQuestions: {
+      type: 'array',
+      items: { type: 'string' },
+    },
     followUp: { type: 'string' },
     safety: {
       type: 'object',
@@ -68,7 +78,16 @@ export const COACH_RESPONSE_SCHEMA = {
       required: ['disclaimer'],
     },
   },
-  required: ['reflection', 'evidence', 'doctorScript', 'followUp', 'safety'],
+  required: [
+    'reflection',
+    'evidence',
+    'doctorScript',
+    'mentionPoints',
+    'detailExplanation',
+    'doctorQuestions',
+    'followUp',
+    'safety',
+  ],
 };
 
 function toFirstPersonPhrase(phrase) {
@@ -155,6 +174,8 @@ export function buildCoachGeminiContext({
     recentTurns: sanitizeRecentTurns(recentTurns),
     gate: {
       intent: gate?.intent || null,
+      responseShape:
+        gate?.intent === 'describe_tracked_data' ? 'data_first' : 'script_first',
       userReported: gate?.layers?.userReported || [],
       verified: gate?.layers?.verified || [],
     },
@@ -163,6 +184,7 @@ export function buildCoachGeminiContext({
       code: evidence?.sufficiency?.code || null,
     },
     severeDistressObserved: Boolean(evidence?.severeDistressObserved),
+    coverage: coverageFromSource(evidence?.source),
     source: {
       logCount: evidence?.source?.logCount ?? 0,
       dateRange: evidence?.source?.dateRange || null,
@@ -193,27 +215,35 @@ export function assertCoachContextIsSafe(context) {
 export function buildCoachSystemInstruction() {
   return `You are Lunelle's Doctor Conversation Coach.
 
-You help the user communicate their own tracked experiences to a healthcare professional.
-You are not a doctor, not a diagnostic tool, and not a general chatbot.
+Your job is to help a woman prepare what she can actually say in a doctor's appointment.
+You are not a dashboard, not a clinical report, not a diagnostic tool, and not a chatbot that recites scores.
+
+Core idea: translate tracked patterns into natural first-person language she could say out loud.
 
 Hard rules:
 - Use ONLY the supplied factCards and allowedFacts. Never calculate statistics.
-- Every number you write must appear in allowedFacts.numbers. Write severities as X/${SEVERITY_MAX}.
-- Never invent symptoms, averages, dates, cycle days, counts, trends, or percentages.
+- Never invent symptoms, averages, dates, cycle days, counts, trends, percentages, or experiences that are not in factCards.
 - Never diagnose, confirm a diagnosis, recommend medication, supplements, or treatment.
 - Never claim tracked data proves a medical condition.
-- Distinguish three layers: (A) what the user said, (B) verified tracking facts, (C) suggested wording.
+- Distinguish three layers: (A) what the user said, (B) verified tracking facts, (C) suggested wording she could use.
 - Do not turn a user's subjective statement into a measured fact.
-- Cycle phrasing: use only allowedPhrases for that window. Never call late_cycle "the week before your period".
-- evidence.facts must copy display values from factCards and set source to "lunelle_evidence".
-- followUp must be one communication-focused question, not a medical question.
-- doctorScript is text the user will say to their clinician. Write it entirely in first person (I, my, me).
-- Window labels and allowedPhrases may say "your". In doctorScript, recast those with scriptPhrases / "my": "the week before my period", "earlier in my cycle", "later in my cycle". Never "your period", "your cycle", "your logs", or "your symptoms" in doctorScript.
-- Addressing the clinician as "you" is allowed only when speaking to them (for example "I wanted to share this with you").`;
+- Cycle phrasing: use only allowedPhrases / scriptPhrases for that window. Never call late_cycle "the week before your period".
+- Follow coverage.repeatabilityHint. If repeatability is limited_window, do not say this happens every cycle or always.
+- evidence.facts must copy display values from factCards and set source to "lunelle_evidence". Keep this as supporting detail, not the spoken script.
+- followUp must be one communication-focused question to the user, not a medical recommendation.
+
+How to write:
+- doctorScript: first person (I, my, me). Sounds like a real person speaking to a doctor. Start with "Doctor," when it fits. Do NOT lead with scores such as "my anxiety increased from 1.4/6 to 4.9/6". Describe the lived pattern in everyday words. Numbers belong in detailExplanation, not the spoken script.
+- In doctorScript and detailExplanation, recast "your" window phrases as "my": "the week before my period", "earlier in my cycle". Never "your period", "your cycle", "your logs", or "your symptoms" there. Addressing the clinician as "you" is allowed ("I wanted to share this with you").
+- mentionPoints: 3–6 short bullets the USER could tell her doctor, based only on available tracking. Coach-to-user wording is OK here. Do not invent.
+- detailExplanation: first person, for if the doctor asks for more detail. Natural language first ("much lower earlier in my cycle and considerably stronger the week before my period"). You MAY include allowed X/${SEVERITY_MAX} figures as supporting information after the plain-language sentence.
+- doctorQuestions: 2–4 questions she could ask her doctor. Discussion prompts only — not treatment advice. Examples of tone: "Could this pattern be related to my menstrual cycle?"
+- If the user asked what the data shows (responseShape data_first), still include a first-person script, and put the clearer pattern explanation in detailExplanation.
+- You may mention that she can also show her Lunelle clinician report for the detailed tables. Do not paste a full report.`;
 }
 
 export function buildCoachUserPrompt(context) {
-  return `Help this user describe their tracked experience to a clinician.
+  return `Help this user prepare natural language for a doctor's appointment.
 
 Context JSON:
 ${JSON.stringify(context)}
@@ -222,7 +252,10 @@ Return JSON only with:
 - reflection.userIntent
 - reflection.userReported[{ text, source: "conversation" }]
 - evidence.facts[{ id, display, text, source: "lunelle_evidence" }]
-- doctorScript (first person throughout: I/my for her own data, never your cycle/period/logs)
+- doctorScript (spoken first-person script; everyday words; no score-led sentences)
+- mentionPoints (string array: things she may want to mention)
+- detailExplanation (plain-language supporting detail; numbers only if they appear in allowedFacts)
+- doctorQuestions (string array: questions she could ask)
 - followUp
 - safety.disclaimer
 - safety.crisisNote (empty unless severeDistressObserved is true)`;
@@ -334,6 +367,23 @@ export function toCoachApiResponse(gate, extras = {}) {
       extras.doctorScript ??
       validated?.reply?.doctorScript ??
       gate.reply.doctorScript,
+    mentionPoints:
+      extras.mentionPoints ??
+      (validated?.reply?.mentionPoints?.length
+        ? validated.reply.mentionPoints
+        : gate.reply.mentionPoints) ??
+      [],
+    detailExplanation:
+      extras.detailExplanation ??
+      validated?.reply?.detailExplanation ??
+      gate.reply.detailExplanation ??
+      null,
+    doctorQuestions:
+      extras.doctorQuestions ??
+      (validated?.reply?.doctorQuestions?.length
+        ? validated.reply.doctorQuestions
+        : gate.reply.doctorQuestions) ??
+      [],
     followUp:
       extras.followUp ??
       validated?.reply?.followUp ??
@@ -361,6 +411,10 @@ function fallbackApiResponse(gate, evidence, reason) {
     fallbackReason: reason,
     facts: fallback.layers.verified,
     doctorScript: fallback.reply.doctorScript || gate.reply.doctorScript,
+    mentionPoints: fallback.reply.mentionPoints || gate.reply.mentionPoints,
+    detailExplanation:
+      fallback.reply.detailExplanation || gate.reply.detailExplanation,
+    doctorQuestions: fallback.reply.doctorQuestions || gate.reply.doctorQuestions,
     followUp: gate.reply.offer,
     validated: fallback,
   });
@@ -406,6 +460,9 @@ export async function runCoachTurn({
       {
         ...parsed,
         doctorScript: parsed.doctorScript,
+        mentionPoints: parsed.mentionPoints,
+        detailExplanation: parsed.detailExplanation,
+        doctorQuestions: parsed.doctorQuestions,
         followUp: parsed.followUp,
         groundedFacts: parsed.evidence?.facts,
       },
@@ -432,6 +489,14 @@ export async function runCoachTurn({
       },
       facts: parsed.evidence?.facts || gate.layers.verified,
       doctorScript: validated.reply.doctorScript,
+      mentionPoints: validated.reply.mentionPoints?.length
+        ? validated.reply.mentionPoints
+        : gate.reply.mentionPoints,
+      detailExplanation:
+        validated.reply.detailExplanation || gate.reply.detailExplanation,
+      doctorQuestions: validated.reply.doctorQuestions?.length
+        ? validated.reply.doctorQuestions
+        : gate.reply.doctorQuestions,
       followUp: validated.reply.followUp,
       validated,
     });

@@ -5,21 +5,19 @@ export const COACH_DISCLAIMER =
 
 export const COACH_STARTERS = [
   {
+    id: 'explain',
+    label: 'Explain my symptoms',
+    message: 'How should I explain my symptoms to my doctor?',
+  },
+  {
     id: 'anxiety',
-    label: 'Explain my anxiety',
-    message: "I don't know how to explain how bad my anxiety gets to my doctor.",
+    label: 'Tell them about my anxiety',
+    message: 'What should I tell my doctor about my anxiety?',
   },
   {
-    id: 'week_before',
-    label: 'The week before my period',
-    message:
-      'Help me describe what the week before my period looks like in my tracking.',
-  },
-  {
-    id: 'impact',
-    label: 'Work and relationships',
-    message:
-      'Help me talk to my doctor about how this affects work and relationships.',
+    id: 'appointment',
+    label: 'Prepare for my appointment',
+    message: 'Can you help me prepare for my appointment?',
   },
 ];
 
