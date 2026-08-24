@@ -14,6 +14,12 @@ import {
   assertPartnerConnectSurfaceSafe,
 } from '../../../client/src/lib/partnerConnectUi.js';
 import {
+  buildPartnerInviteLink,
+  readInviteCodeFromLocation,
+  PARTNER_INVITE_CODE_PARAM,
+} from '../../../client/src/lib/partnerInviteLink.js';
+import { resolvePartnerPostAuthPath } from '../../../client/src/lib/partnerPostAuth.js';
+import {
   pickOwnerConnection,
   pickPartnerConnection,
 } from '../../../client/src/lib/partnerApi.js';
@@ -60,19 +66,47 @@ async function run() {
       report.cases.declineEndpointAndBody = { ok: true };
     }
 
-    // No URL/query persistence patterns in connect sources
+    // Invite link generation + URL code param (accept still uses POST body)
+    {
+      const prev = process.env.VITE_APP_URL;
+      process.env.VITE_APP_URL = 'https://app.example.com';
+      const link = buildPartnerInviteLink('abc-123');
+      assert(
+        link === 'https://app.example.com/partner/connect?code=abc-123',
+        'invite link shape',
+      );
+      assert(
+        readInviteCodeFromLocation('?code=abc-123') === 'abc-123',
+        'read code from query',
+      );
+      assert(PARTNER_INVITE_CODE_PARAM === 'code', 'code param name');
+      process.env.VITE_APP_URL = prev;
+      report.cases.inviteLinkGeneration = { ok: true };
+    }
+
+    // No localStorage; sessionStorage only in partnerInviteLink for auth handoff
     {
       const sources = [
         readClientSource('lib/partnerConnectUi.js'),
         readClientSource('lib/partnerApi.js'),
         readClientSource('hooks/usePartnerConnect.js'),
         readClientSource('pages/PartnerConnect.jsx'),
+        readClientSource('lib/partnerPostAuth.js'),
       ].join('\n');
-      assert(!sources.includes('localStorage'), 'localStorage used');
-      assert(!sources.includes('sessionStorage'), 'sessionStorage used');
-      assert(!/inviteCode.*searchParams|searchParams.*inviteCode/.test(sources), 'code in query');
-      assert(!sources.includes('useSearchParams'), 'router query params');
-      report.cases.noCodePersistence = { ok: true };
+      const inviteLinkSource = readClientSource('lib/partnerInviteLink.js');
+      assert(!/\blocalStorage\.(get|set|remove)Item/.test(sources), 'localStorage API in connect flow');
+      assert(
+        inviteLinkSource.includes('sessionStorage'),
+        'sessionStorage in invite link helper',
+      );
+      assert(!/inviteCode.*searchParams|searchParams.*inviteCode/.test(sources), 'code in fetch query');
+      report.cases.noLocalPersistence = { ok: true };
+    }
+
+    // Post-auth resolver exported for login/signup redirect
+    {
+      assert(typeof resolvePartnerPostAuthPath === 'function', 'post auth helper');
+      report.cases.postAuthHelper = { ok: true };
     }
 
     // Safe generic errors

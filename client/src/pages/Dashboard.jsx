@@ -147,9 +147,17 @@ export default function Dashboard() {
           title="Nothing logged yet"
           description="Take a moment to check in with yourself. Your patterns will appear here once you start tracking."
           action={
-            <Link to="/track" className="btn-accent min-h-[48px] px-6 py-3 text-sm">
-              Log today&apos;s symptoms
-            </Link>
+            <div className="flex flex-col items-center gap-3">
+              <Link to="/track" className="btn-accent min-h-[48px] px-6 py-3 text-sm">
+                Log today&apos;s symptoms
+              </Link>
+              <Link
+                to="/partner/connect"
+                className="text-sm font-medium text-moss underline-offset-2 hover:text-ink hover:underline"
+              >
+                Have an invite code?
+              </Link>
+            </div>
           }
         />
       </div>

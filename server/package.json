@@ -19,7 +19,8 @@
     "verify:partner-connect-client": "node src/scripts/verify-partner-connect-client.js",
     "verify:partner-revoke-client": "node src/scripts/verify-partner-revoke-client.js",
     "verify:partner-propagation-client": "node src/scripts/verify-partner-propagation-client.js",
-    "verify:partner-accept-rate-limit": "node src/scripts/verify-partner-accept-rate-limit.js"
+    "verify:partner-accept-rate-limit": "node src/scripts/verify-partner-accept-rate-limit.js",
+    "verify:demo-account-guard": "node src/scripts/verify-demo-account-guard.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",

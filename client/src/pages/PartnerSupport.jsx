@@ -6,6 +6,7 @@ import {
   partnerViewSectionKeys,
 } from '../lib/partnerViewUi.js';
 import { usePartnerView } from '../hooks/usePartnerView.js';
+import { usePartnerAppMode } from '../contexts/PartnerAppModeContext.jsx';
 import { LeaveSharedSpaceButton } from '../components/partner/LeaveSharedSpaceButton.jsx';
 
 function SupportCard({ children, className = '' }) {
@@ -298,6 +299,13 @@ export default function PartnerSupport() {
     revokeBusy,
     leaveSharedSpace,
   } = usePartnerView();
+  const { refresh: refreshAppMode } = usePartnerAppMode();
+
+  async function handleLeave() {
+    const result = await leaveSharedSpace();
+    await refreshAppMode();
+    return result;
+  }
 
   if (loading && !error?.kind) {
     return (
@@ -378,7 +386,7 @@ export default function PartnerSupport() {
 
       {!hasContent ? <EmptySharedSpace /> : null}
 
-      <LeaveSharedSpaceButton onLeave={leaveSharedSpace} busy={revokeBusy} />
+      <LeaveSharedSpaceButton onLeave={handleLeave} busy={revokeBusy} />
 
       <PrivacyFooter />
     </div>

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   acceptPartnerInvitation,
   declinePartnerInvitation,
@@ -11,16 +11,27 @@ import {
   mapPartnerConnectError,
   resolveConnectPageMode,
 } from '../lib/partnerConnectUi.js';
+import {
+  readInviteCodeFromLocation,
+  stashPendingInviteCode,
+} from '../lib/partnerInviteLink.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
 
 export function usePartnerConnect() {
   const { user, getIdToken } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [links, setLinks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [outcome, setOutcome] = useState(null);
+  const autoAcceptAttempted = useRef(false);
+
+  const inviteCodeFromUrl = useMemo(
+    () => readInviteCodeFromLocation(`?${searchParams.toString()}`),
+    [searchParams],
+  );
 
   const ownerConnection = useMemo(
     () => pickOwnerConnection(links, user?.uid),
@@ -77,6 +88,12 @@ export function usePartnerConnect() {
   }, [refresh]);
 
   useEffect(() => {
+    if (inviteCodeFromUrl) {
+      stashPendingInviteCode(inviteCodeFromUrl);
+    }
+  }, [inviteCodeFromUrl]);
+
+  useEffect(() => {
     if (!loading && pageMode === 'already_active') {
       navigate('/partner/support', { replace: true });
     }
@@ -110,6 +127,23 @@ export function usePartnerConnect() {
     },
     [getIdToken, navigate, refresh],
   );
+
+  useEffect(() => {
+    if (
+      loading ||
+      busy ||
+      pageMode !== 'form' ||
+      !inviteCodeFromUrl ||
+      autoAcceptAttempted.current
+    ) {
+      return;
+    }
+
+    autoAcceptAttempted.current = true;
+    accept(inviteCodeFromUrl).catch(() => {
+      /* error shown in UI */
+    });
+  }, [accept, busy, inviteCodeFromUrl, loading, pageMode]);
 
   const decline = useCallback(
     async (inviteCode) => {
@@ -145,6 +179,7 @@ export function usePartnerConnect() {
     error,
     outcome,
     pageMode,
+    inviteCodeFromUrl,
     ownerConnection,
     partnerConnection,
     accept,

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { LoadingState } from '../components/ui/states.jsx';
 import { usePartnerConnect } from '../hooks/usePartnerConnect.js';
@@ -67,8 +67,14 @@ function DeclinedState({ onReset }) {
   );
 }
 
-function ConnectForm({ onAccept, onDecline, busy, error }) {
-  const [code, setCode] = useState('');
+function ConnectForm({ onAccept, onDecline, busy, error, initialCode = '' }) {
+  const [code, setCode] = useState(initialCode);
+
+  useEffect(() => {
+    if (initialCode) {
+      setCode(initialCode);
+    }
+  }, [initialCode]);
 
   function clearCode() {
     setCode('');
@@ -153,6 +159,7 @@ export default function PartnerConnect() {
     error,
     outcome,
     pageMode,
+    inviteCodeFromUrl,
     accept,
     decline,
     clearOutcome,
@@ -178,8 +185,9 @@ export default function PartnerConnect() {
           Connect to someone you care about
         </h1>
         <p className="mt-3 text-base leading-relaxed text-moss">
-          Enter the private connection code they shared with you. What you can see
-          depends on what they&apos;ve chosen to share.
+          {inviteCodeFromUrl
+            ? 'Connecting you to their shared space…'
+            : 'Enter the private connection code they shared with you. What you can see depends on what they\u2019ve chosen to share.'}
         </p>
       </header>
 
@@ -192,6 +200,7 @@ export default function PartnerConnect() {
             onDecline={decline}
             busy={busy}
             error={error}
+            initialCode={inviteCodeFromUrl}
           />
         </ConnectCard>
       )}

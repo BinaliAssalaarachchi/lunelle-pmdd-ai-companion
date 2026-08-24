@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CoachReply } from '../components/coach/CoachReply.jsx';
+import { CoachReply, CoachReplyPreview } from '../components/coach/CoachReply.jsx';
 import { EmptyState, LoadingDots } from '../components/ui/states.jsx';
 import { AiGeneratedLabel } from '../components/ui/AiGeneratedLabel.jsx';
 import { useDoctorCoach } from '../hooks/useDoctorCoach.js';
@@ -101,11 +101,19 @@ export default function DoctorCoach() {
       ) : null}
 
       {turns.length === 0 && !sending ? (
-        <EmptyState
-          icon={<CoachIcon />}
-          title="Start with what is hard to say"
-          description="Pick a prompt, or write the thing you wish you could explain in the appointment room."
-        />
+        <>
+          <EmptyState
+            icon={<CoachIcon />}
+            title="Start with what is hard to say"
+            description="Pick a prompt, or write the thing you wish you could explain in the appointment room."
+          />
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-faint">
+              Preview — redesigned reply
+            </p>
+            <CoachReplyPreview />
+          </div>
+        </>
       ) : null}
 
       <div className="space-y-4">

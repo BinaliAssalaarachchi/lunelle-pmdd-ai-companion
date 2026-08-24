@@ -1,7 +1,10 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { BrandLockup } from '../ui/BrandMark.jsx';
+import { LoadingState } from '../ui/states.jsx';
+import { PartnerAppModeProvider, usePartnerAppMode } from '../../contexts/PartnerAppModeContext.jsx';
+import { PartnerAppShellLayout } from './PartnerAppShellLayout.jsx';
 
-const NAV = [
+const OWNER_NAV = [
   { to: '/', label: 'Home', end: true, icon: 'home' },
   { to: '/insights', label: 'Insights', icon: 'insights' },
   { to: '/track', label: 'Track', icon: 'track', primary: true },
@@ -162,10 +165,9 @@ function MobileTrackButton() {
   );
 }
 
-export function AppShell() {
+function OwnerAppShellLayout() {
   return (
     <div className="app-ambient min-h-screen md:flex">
-      {/* Desktop sidebar */}
       <nav
         aria-label="Primary"
         className="fixed left-0 top-0 z-40 hidden h-screen w-64 flex-col border-r border-pine/15 bg-[#eefbf9] px-5 py-8 md:flex"
@@ -178,7 +180,7 @@ export function AppShell() {
         </div>
 
         <div className="flex flex-1 flex-col gap-1">
-          {NAV.map((item) => (
+          {OWNER_NAV.map((item) => (
             <SidebarLink key={item.to} item={item} />
           ))}
         </div>
@@ -198,13 +200,12 @@ export function AppShell() {
         <Outlet />
       </main>
 
-      {/* Mobile bottom navigation */}
       <nav
         aria-label="Main sections"
         className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-cream/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm shadow-lift md:hidden"
       >
         <div className="mx-auto grid max-w-md grid-cols-5 items-end px-2">
-          {NAV.map((item) =>
+          {OWNER_NAV.map((item) =>
             item.primary ? (
               <MobileTrackButton key={item.to} />
             ) : (
@@ -214,5 +215,31 @@ export function AppShell() {
         </div>
       </nav>
     </div>
+  );
+}
+
+function AppShellRouter() {
+  const { loading, partnerOnly } = usePartnerAppMode();
+
+  if (loading) {
+    return (
+      <div className="app-ambient flex min-h-screen items-center justify-center">
+        <LoadingState message="Loading…" />
+      </div>
+    );
+  }
+
+  if (partnerOnly) {
+    return <PartnerAppShellLayout />;
+  }
+
+  return <OwnerAppShellLayout />;
+}
+
+export function AppShell() {
+  return (
+    <PartnerAppModeProvider>
+      <AppShellRouter />
+    </PartnerAppModeProvider>
   );
 }

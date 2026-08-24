@@ -1,6 +1,10 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import { ProtectedRoute } from './components/auth/ProtectedRoute.jsx';
+import {
+  AppDefaultRedirect,
+  PartnerOnlyGuard,
+} from './components/auth/PartnerOnlyGuard.jsx';
 import { AppShell } from './components/layout/AppShell.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Track from './pages/Track.jsx';
@@ -25,17 +29,19 @@ export default function App() {
           <Route path="/signup" element={<Signup />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<AppShell />}>
-              <Route index element={<Dashboard />} />
-              <Route path="track" element={<Track />} />
-              <Route path="insights" element={<InsightsLayout />}>
-                <Route index element={<Insights />} />
-                <Route path="coach" element={<DoctorCoach />} />
+              <Route element={<PartnerOnlyGuard />}>
+                <Route index element={<Dashboard />} />
+                <Route path="track" element={<Track />} />
+                <Route path="insights" element={<InsightsLayout />}>
+                  <Route index element={<Insights />} />
+                  <Route path="coach" element={<DoctorCoach />} />
+                </Route>
+                <Route path="reports" element={<Reports />} />
               </Route>
-              <Route path="reports" element={<Reports />} />
               <Route path="profile" element={<Profile />} />
               <Route path="partner/connect" element={<PartnerConnect />} />
               <Route path="partner/support" element={<PartnerSupport />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<AppDefaultRedirect />} />
             </Route>
           </Route>
         </Routes>

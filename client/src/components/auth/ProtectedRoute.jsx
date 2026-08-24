@@ -33,7 +33,8 @@ export function ProtectedRoute() {
   }
 
   if (!user) {
-    return <Navigate to="/welcome" replace state={{ from: location.pathname }} />;
+    const returnTo = `${location.pathname}${location.search}`;
+    return <Navigate to="/welcome" replace state={{ from: returnTo }} />;
   }
 
   return <Outlet />;

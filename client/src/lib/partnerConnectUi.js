@@ -5,7 +5,7 @@
 export const PARTNER_ACCEPT_PATH = '/api/partner/accept';
 export const PARTNER_DECLINE_PATH = '/api/partner/decline';
 
-/** POST body for accept — code never belongs in URL or storage. */
+/** POST body for accept — code is sent in the body, never stored in localStorage. */
 export function buildPartnerAcceptBody(inviteCode) {
   const code = String(inviteCode || '').trim();
   return { inviteCode: code };

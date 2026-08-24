@@ -11,6 +11,10 @@ import {
 } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { DEMO_ACCOUNT } from '../../../shared/constants.js';
+import {
+  DEMO_MODE_UNAVAILABLE_MESSAGE,
+  isDemoAccountUser,
+} from '../lib/demoAccount.js';
 import { auth, db, isFirebaseConfigured } from '../lib/firebase.js';
 
 const AuthContext = createContext(null);
@@ -147,9 +151,28 @@ export function AuthProvider({ children }) {
         if (!auth?.currentUser?.email) {
           throw new Error('Not signed in');
         }
+        if (isDemoAccountUser(toUser(auth.currentUser))) {
+          throw new Error(DEMO_MODE_UNAVAILABLE_MESSAGE);
+        }
         if (!nextPassword || nextPassword.length < 6) {
           throw new Error('New password must be at least 6 characters');
         }
+
+        const token = await auth.currentUser.getIdToken();
+        const gate = await fetch('/api/account/password', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        const gateData = await gate.json().catch(() => ({}));
+        if (!gate.ok) {
+          throw new Error(
+            gateData.error || DEMO_MODE_UNAVAILABLE_MESSAGE,
+          );
+        }
+
         const credential = EmailAuthProvider.credential(
           auth.currentUser.email,
           currentPassword,
@@ -166,6 +189,9 @@ export function AuthProvider({ children }) {
       async deleteAccount() {
         if (!auth?.currentUser) {
           throw new Error('Not signed in');
+        }
+        if (isDemoAccountUser(toUser(auth.currentUser))) {
+          throw new Error(DEMO_MODE_UNAVAILABLE_MESSAGE);
         }
         const token = await auth.currentUser.getIdToken(true);
         const response = await fetch('/api/account', {

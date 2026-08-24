@@ -1,7 +1,6 @@
 import { CurrentInsight } from '../components/insights/CurrentInsight.jsx';
 import { InsightHistoryPanel } from '../components/insights/InsightHistoryPanel.jsx';
 import { SymptomTrendChart } from '../components/insights/SymptomTrendChart.jsx';
-import { AiGeneratedLabel } from '../components/ui/AiGeneratedLabel.jsx';
 import { EmptyState, LoadingDots, LoadingState } from '../components/ui/states.jsx';
 import { useInsights } from '../hooks/useInsights.js';
 
@@ -73,9 +72,6 @@ export default function Insights() {
         <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-ink md:text-5xl">
           Your latest insight
         </h1>
-        <div className="mt-3">
-          <AiGeneratedLabel />
-        </div>
       </header>
 
       {error ? (

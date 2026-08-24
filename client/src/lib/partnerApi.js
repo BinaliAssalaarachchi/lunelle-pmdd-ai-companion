@@ -208,6 +208,22 @@ export function pickPartnerConnection(links, partnerId) {
   return { state: 'none', link: null };
 }
 
+/**
+ * True when the signed-in user is an active partner with no owner-side link open.
+ */
+export function isPartnerOnlyUser(links, userId) {
+  if (!userId) return false;
+  const ownedOpen = (Array.isArray(links) ? links : []).some(
+    (link) =>
+      link?.ownerId === userId &&
+      (link.status === 'active' || link.status === 'pending'),
+  );
+  if (ownedOpen) return false;
+  return (Array.isArray(links) ? links : []).some(
+    (link) => link?.partnerId === userId && link.status === 'active',
+  );
+}
+
 export async function fetchPartnerView(token, linkId) {
   return partnerRequest(buildPartnerViewRequestUrl(linkId), { token });
 }

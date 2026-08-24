@@ -5,12 +5,22 @@ import {
   isFirebaseAdminConfigured,
 } from '../lib/firebase-admin.js';
 import { requireAuth } from '../middleware/auth.js';
+import { rejectIfDemoAccount } from '../middleware/demoAccountGuard.js';
 import {
   createFirestorePartnerLinkStore,
   createPartnerLifecycleService,
 } from '../services/partnerLifecycle.js';
 
 const router = Router();
+
+/**
+ * Password updates use Firebase Client SDK, but must clear this gate first
+ * so the demo account cannot be changed even if the UI is bypassed.
+ */
+router.post('/password', requireAuth, async (req, res) => {
+  if (rejectIfDemoAccount(req, res)) return;
+  return res.json({ ok: true });
+});
 
 async function deleteCollection(ref) {
   const snap = await ref.limit(400).get();
@@ -33,6 +43,8 @@ async function revokePartnerLinksForUser(userId) {
 
 router.delete('/', requireAuth, async (req, res, next) => {
   try {
+    if (rejectIfDemoAccount(req, res)) return;
+
     const userId = req.userId;
     const db = getFirestore();
     const userRef = db.collection('users').doc(userId);

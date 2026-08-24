@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { BrandLockup } from '../components/ui/BrandMark.jsx';
+import { navigateAfterAuth } from '../lib/partnerPostAuth.js';
 
 export default function Signup() {
-  const { user, loading, signup, configured } = useAuth();
+  const { user, loading, signup, configured, getIdToken } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -13,7 +15,7 @@ export default function Signup() {
   const [submitting, setSubmitting] = useState(false);
 
   if (!loading && user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={location.state?.from || '/'} replace />;
   }
 
   async function handleSubmit(event) {
@@ -21,8 +23,13 @@ export default function Signup() {
     setSubmitting(true);
     setError('');
     try {
-      await signup(email.trim(), password, displayName.trim());
-      navigate('/', { replace: true });
+      const signedIn = await signup(email.trim(), password, displayName.trim());
+      await navigateAfterAuth({
+        getIdToken,
+        userId: signedIn.uid,
+        navigate,
+        location,
+      });
     } catch (err) {
       setError(err.message || 'Could not create account');
     } finally {
@@ -96,7 +103,7 @@ export default function Signup() {
 
         <p className="mt-6 text-center text-sm text-moss">
           Already have an account?{' '}
-          <Link to="/login" className="link-accent">
+          <Link to="/login" state={location.state} className="link-accent">
             Log in
           </Link>
         </p>

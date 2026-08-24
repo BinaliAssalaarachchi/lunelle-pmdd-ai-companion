@@ -24,6 +24,9 @@ function friendlyPartnerError(message, code) {
   if (code === 'LINK_ALREADY_OPEN') {
     return 'You already have a partner invitation or connection open. Revoke it before sending a new one.';
   }
+  if (code === 'DEMO_MODE_FORBIDDEN') {
+    return 'Not available in Demo Mode.';
+  }
   if (/fetch|network|unavailable|timeout/i.test(message || '')) {
     return 'We could not reach Lunelle just now. Please try again.';
   }

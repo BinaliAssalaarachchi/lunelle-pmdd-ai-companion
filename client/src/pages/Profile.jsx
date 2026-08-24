@@ -10,6 +10,10 @@ import { LoadingState } from '../components/ui/states.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useProfileSettings } from '../hooks/useProfileSettings.js';
 import { PartnerSharingSection } from '../components/profile/PartnerSharingSection.jsx';
+import {
+  DEMO_MODE_UNAVAILABLE_MESSAGE,
+  isDemoAccountUser,
+} from '../lib/demoAccount.js';
 
 function initialsFromName(name = '') {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -71,6 +75,7 @@ export default function Profile() {
     updateDisplayName,
     changePassword,
   } = useAuth();
+  const isDemo = isDemoAccountUser(user);
   const { loading, saving, error, profile, setProfile, saveProfile } =
     useProfileSettings();
 
@@ -390,47 +395,55 @@ export default function Profile() {
 
         <form onSubmit={handlePasswordChange} className="space-y-3">
           <p className="text-base font-semibold text-ink">Password</p>
-          <Field label="Current password">
-            <input
-              type="password"
-              autoComplete="current-password"
-              value={currentPassword}
-              onChange={(event) => setCurrentPassword(event.target.value)}
-              className="input-field min-h-[44px] px-3 py-3 text-base"
-              required
-            />
-          </Field>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="New password">
-              <input
-                type="password"
-                autoComplete="new-password"
-                minLength={6}
-                value={nextPassword}
-                onChange={(event) => setNextPassword(event.target.value)}
-                className="input-field min-h-[44px] px-3 py-3 text-base"
-                required
-              />
-            </Field>
-            <Field label="Confirm">
-              <input
-                type="password"
-                autoComplete="new-password"
-                minLength={6}
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                className="input-field min-h-[44px] px-3 py-3 text-base"
-                required
-              />
-            </Field>
-          </div>
-          <button
-            type="submit"
-            disabled={passwordSaving}
-            className="btn-login-soft min-h-[44px] px-5 py-2.5 text-sm"
-          >
-            {passwordSaving ? 'Updating…' : 'Update password'}
-          </button>
+          {isDemo ? (
+            <p className="rounded-2xl border border-white/60 bg-cream/55 px-4 py-3 text-sm text-moss">
+              {DEMO_MODE_UNAVAILABLE_MESSAGE}
+            </p>
+          ) : (
+            <>
+              <Field label="Current password">
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  value={currentPassword}
+                  onChange={(event) => setCurrentPassword(event.target.value)}
+                  className="input-field min-h-[44px] px-3 py-3 text-base"
+                  required
+                />
+              </Field>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="New password">
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    minLength={6}
+                    value={nextPassword}
+                    onChange={(event) => setNextPassword(event.target.value)}
+                    className="input-field min-h-[44px] px-3 py-3 text-base"
+                    required
+                  />
+                </Field>
+                <Field label="Confirm">
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    minLength={6}
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    className="input-field min-h-[44px] px-3 py-3 text-base"
+                    required
+                  />
+                </Field>
+              </div>
+              <button
+                type="submit"
+                disabled={passwordSaving}
+                className="btn-login-soft min-h-[44px] px-5 py-2.5 text-sm"
+              >
+                {passwordSaving ? 'Updating…' : 'Update password'}
+              </button>
+            </>
+          )}
         </form>
 
         <Link
@@ -456,14 +469,20 @@ export default function Profile() {
           .
         </p>
 
-        <button
-          type="button"
-          disabled={deleting}
-          onClick={handleDeleteAccount}
-          className="flex min-h-[44px] w-full items-center justify-center rounded-full border border-danger/35 px-4 py-3 text-sm font-semibold text-danger transition hover:bg-danger-soft disabled:opacity-50"
-        >
-          {deleting ? 'Deleting…' : 'Delete account & data'}
-        </button>
+        {isDemo ? (
+          <p className="rounded-2xl border border-white/60 bg-cream/55 px-4 py-3 text-center text-sm text-moss">
+            Delete account &amp; data — {DEMO_MODE_UNAVAILABLE_MESSAGE}
+          </p>
+        ) : (
+          <button
+            type="button"
+            disabled={deleting}
+            onClick={handleDeleteAccount}
+            className="flex min-h-[44px] w-full items-center justify-center rounded-full border border-danger/35 px-4 py-3 text-sm font-semibold text-danger transition hover:bg-danger-soft disabled:opacity-50"
+          >
+            {deleting ? 'Deleting…' : 'Delete account & data'}
+          </button>
+        )}
       </SettingsSection>
 
       <div className="flex justify-center pt-2 md:justify-start">

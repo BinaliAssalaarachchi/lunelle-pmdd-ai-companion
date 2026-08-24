@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { BrandLockup } from '../components/ui/BrandMark.jsx';
+import { navigateAfterAuth } from '../lib/partnerPostAuth.js';
 
 export default function Login() {
-  const { user, loading, login, loginDemo, configured } = useAuth();
+  const { user, loading, login, loginDemo, configured, getIdToken } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState('');
@@ -22,8 +23,13 @@ export default function Login() {
     setSubmitting(true);
     setError('');
     try {
-      await login(email.trim(), password);
-      navigate(location.state?.from || '/', { replace: true });
+      const signedIn = await login(email.trim(), password);
+      await navigateAfterAuth({
+        getIdToken,
+        userId: signedIn.uid,
+        navigate,
+        location,
+      });
     } catch (err) {
       setError(err.message || 'Could not sign in');
     } finally {
@@ -126,7 +132,7 @@ export default function Login() {
 
         <p className="mt-6 text-center text-sm text-moss">
           New here?{' '}
-          <Link to="/signup" className="link-accent">
+          <Link to="/signup" state={location.state} className="link-accent">
             Create an account
           </Link>
         </p>

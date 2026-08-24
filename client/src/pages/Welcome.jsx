@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { BrandLockup } from '../components/ui/BrandMark.jsx';
 import trackArt from '../assets/welcome/track.png';
@@ -204,6 +204,8 @@ function FeatureCarousel() {
 
 export default function Welcome() {
   const { user, loading } = useAuth();
+  const location = useLocation();
+  const authState = location.state?.from ? { from: location.state.from } : undefined;
 
   if (!loading && user) {
     return <Navigate to="/" replace />;
@@ -215,6 +217,7 @@ export default function Welcome() {
         <BrandLockup markClassName="h-12 w-12" textClassName="text-4xl" />
         <Link
           to="/login"
+          state={authState}
           className="btn-login-soft min-h-[44px] px-5 py-2 text-sm"
         >
           Log in
@@ -238,12 +241,14 @@ export default function Welcome() {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
               to="/signup"
+              state={authState}
               className="btn-accent min-h-[52px] w-full px-8 py-3.5 text-sm sm:w-auto"
             >
               Get started
             </Link>
             <Link
               to="/login"
+              state={authState}
               className="btn-primary min-h-[52px] w-full px-8 py-3.5 text-sm sm:w-auto"
             >
               Log in

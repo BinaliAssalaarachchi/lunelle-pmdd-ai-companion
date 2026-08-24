@@ -7,6 +7,7 @@ import {
 } from './SettingsSection.jsx';
 import { LoadingState } from '../ui/states.jsx';
 import { PARTNER_PERMISSION_UI } from '../../lib/partnerApi.js';
+import { buildPartnerInviteLink } from '../../lib/partnerInviteLink.js';
 import { usePartnerSharing } from '../../hooks/usePartnerSharing.js';
 import { LeaveSharedSpaceButton } from '../partner/LeaveSharedSpaceButton.jsx';
 
@@ -109,20 +110,22 @@ function InviteForm({ onInvite, busy }) {
       </button>
       {submitted ? (
         <p className="rounded-2xl border-2 border-fern bg-cream px-4 py-3 text-sm text-pine-deep">
-          Invitation created. When your partner joins Lunelle, share the private
-          connection code with them once.
+          Invitation created. Copy the invite link below and send it to your
+          partner — they can tap it to connect.
         </p>
       ) : null}
     </form>
   );
 }
 
-function OneTimeShareCode({ code, onDismiss }) {
+function OneTimeShareLink({ inviteCode, onDismiss }) {
   const [copied, setCopied] = useState(false);
+  const inviteLink = buildPartnerInviteLink(inviteCode);
 
   async function handleCopy() {
+    if (!inviteLink) return;
     try {
-      await navigator.clipboard.writeText(code);
+      await navigator.clipboard.writeText(inviteLink);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -132,21 +135,22 @@ function OneTimeShareCode({ code, onDismiss }) {
 
   return (
     <div className="rounded-2xl border border-fern/40 bg-fern-soft/40 px-4 py-4">
-      <p className="text-base font-semibold text-ink">Private connection code</p>
+      <p className="text-base font-semibold text-ink">Invite link</p>
       <p className="mt-1 text-sm leading-relaxed text-moss">
-        Share this with your partner once so they can connect. It will not appear
-        again after you leave this page.
+        Send this link to your partner once (text, WhatsApp, etc.). It will not
+        appear again after you leave this page.
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <code className="rounded-xl bg-cream px-3 py-2 text-sm font-medium text-ink break-all">
-          {code}
+        <code className="max-w-full rounded-xl bg-cream px-3 py-2 text-sm font-medium text-ink break-all">
+          {inviteLink || inviteCode}
         </code>
         <button
           type="button"
           onClick={handleCopy}
-          className="btn-login-soft min-h-[40px] px-4 py-2 text-sm"
+          disabled={!inviteLink}
+          className="btn-login-soft min-h-[40px] px-4 py-2 text-sm disabled:opacity-50"
         >
-          {copied ? 'Copied' : 'Copy code'}
+          {copied ? 'Copied' : 'Copy invite link'}
         </button>
         <button
           type="button"
@@ -331,7 +335,7 @@ export function PartnerSharingSection() {
         ) : null}
 
         {pendingShareCode ? (
-          <OneTimeShareCode code={pendingShareCode} onDismiss={dismissShareCode} />
+          <OneTimeShareLink inviteCode={pendingShareCode} onDismiss={dismissShareCode} />
         ) : null}
 
         {state === 'none' || (state === 'revoked' && canInvite) ? (
@@ -356,13 +360,13 @@ export function PartnerSharingSection() {
               <p className="mt-1 text-sm leading-relaxed text-moss">
                 {link.partnerEmail
                   ? `Invitation for ${link.partnerEmail} is pending.`
-                  : 'Your invitation is waiting. Share your private connection code with them once.'}
+                  : 'Your invitation is waiting. Copy the invite link and send it to them.'}
               </p>
             </div>
             {!pendingShareCode ? (
               <p className="text-sm text-moss">
-                If you did not copy the connection code yet, revoke this
-                invitation and send a new one.
+                If you did not copy the invite link yet, revoke this invitation
+                and send a new one.
               </p>
             ) : null}
             <DoctorCoachPrivacy />
