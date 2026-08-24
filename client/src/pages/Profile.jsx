@@ -9,6 +9,7 @@ import {
 import { LoadingState } from '../components/ui/states.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useProfileSettings } from '../hooks/useProfileSettings.js';
+import { PartnerSharingSection } from '../components/profile/PartnerSharingSection.jsx';
 
 function initialsFromName(name = '') {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -378,6 +379,8 @@ export default function Profile() {
           </button>
         </SettingsSection>
       </form>
+
+      <PartnerSharingSection />
 
       <SettingsSection title="Privacy & security" icon={<IconShield />}>
         <p className="text-base leading-relaxed text-moss">

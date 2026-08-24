@@ -1,6 +1,14 @@
 import { Router } from 'express';
-import { getAuth, getFirestore } from '../lib/firebase-admin.js';
+import {
+  getAuth,
+  getFirestore,
+  isFirebaseAdminConfigured,
+} from '../lib/firebase-admin.js';
 import { requireAuth } from '../middleware/auth.js';
+import {
+  createFirestorePartnerLinkStore,
+  createPartnerLifecycleService,
+} from '../services/partnerLifecycle.js';
 
 const router = Router();
 
@@ -15,11 +23,22 @@ async function deleteCollection(ref) {
   }
 }
 
+async function revokePartnerLinksForUser(userId) {
+  if (!isFirebaseAdminConfigured()) return { revoked: 0 };
+  const service = createPartnerLifecycleService(
+    createFirestorePartnerLinkStore(getFirestore()),
+  );
+  return service.revokeAllLinksForUser(userId);
+}
+
 router.delete('/', requireAuth, async (req, res, next) => {
   try {
     const userId = req.userId;
     const db = getFirestore();
     const userRef = db.collection('users').doc(userId);
+
+    // Revoke partnerships first so partners lose access before data is wiped.
+    await revokePartnerLinksForUser(userId);
 
     await deleteCollection(userRef.collection('symptomLogs'));
     await deleteCollection(userRef.collection('cycleEvents'));

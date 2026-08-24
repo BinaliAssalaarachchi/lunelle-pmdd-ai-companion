@@ -5,6 +5,7 @@ import { BrandLockup } from '../components/ui/BrandMark.jsx';
 import trackArt from '../assets/welcome/track.png';
 import insightsArt from '../assets/welcome/insights.png';
 import reportsArt from '../assets/welcome/reports.png';
+import partnerArt from '../assets/welcome/partner.png';
 import coachArt from '../assets/welcome/coach.png';
 
 function LockIcon() {
@@ -75,11 +76,20 @@ function FeatureCarousel() {
       text: 'A clean, clinician-ready report — or a gentle personal summary, whichever you need.',
     },
     {
+      key: 'partner',
+      label: 'Partner sharing',
+      art: partnerArt,
+      heading: 'Share on your terms',
+      text: 'Invite someone you trust to see only what you choose — never your full private record.',
+      artClassName: 'scale-[1.05]',
+    },
+    {
       key: 'coach',
       label: 'Doctor Coach',
       art: coachArt,
       heading: 'Find the words',
       text: 'Doctor Coach turns what you’ve logged into a clear, calm script for your appointment — never a diagnosis.',
+      artClassName: 'scale-[1.06]',
     },
   ];
 
@@ -152,7 +162,7 @@ function FeatureCarousel() {
                       alt=""
                       aria-hidden="true"
                       draggable="false"
-                      className="h-full w-full object-cover"
+                      className={`h-full w-full object-cover ${slide.artClassName ?? ''}`}
                     />
                   </span>
                 </span>

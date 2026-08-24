@@ -10,7 +10,16 @@
     "verify:coach-evidence": "node src/scripts/verify-coach-evidence.js",
     "verify:coach-safety": "node src/scripts/verify-coach-safety.js",
     "verify:coach-api": "node src/scripts/verify-coach-api.js",
-    "verify:coach-ui-flow": "node src/scripts/verify-coach-ui-flow.js"
+    "verify:coach-ui-flow": "node src/scripts/verify-coach-ui-flow.js",
+    "verify:partner-lifecycle": "node src/scripts/verify-partner-lifecycle.js",
+    "verify:partner-view": "node src/scripts/verify-partner-view.js",
+    "verify:partner-owner-ui": "node src/scripts/verify-partner-owner-ui.js",
+    "verify:partner-view-client": "node src/scripts/verify-partner-view-client.js",
+    "verify:partner-hardening": "node src/scripts/verify-partner-hardening.js",
+    "verify:partner-connect-client": "node src/scripts/verify-partner-connect-client.js",
+    "verify:partner-revoke-client": "node src/scripts/verify-partner-revoke-client.js",
+    "verify:partner-propagation-client": "node src/scripts/verify-partner-propagation-client.js",
+    "verify:partner-accept-rate-limit": "node src/scripts/verify-partner-accept-rate-limit.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",

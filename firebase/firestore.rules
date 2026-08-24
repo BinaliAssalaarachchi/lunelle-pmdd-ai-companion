@@ -10,13 +10,6 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
-    function isPartnerLinkParticipant() {
-      return isSignedIn() && (
-        request.auth.uid == resource.data.ownerId ||
-        request.auth.uid == resource.data.partnerId
-      );
-    }
-
     // Own profile only — partners never get access via these paths
     match /users/{userId} {
       allow read, write: if isUser(userId);
@@ -36,16 +29,10 @@ service cloud.firestore {
       }
     }
 
-    // Link records only — never grants access to another user's clinical data
+    // Link lifecycle and metadata are Express + Admin SDK only.
+    // Client SDK must not read or write partnerLinks — all access via /api/partner/*.
     match /partnerLinks/{linkId} {
-      allow create: if isSignedIn()
-        && request.auth.uid == request.resource.data.ownerId
-        && request.resource.data.keys().hasAll(['ownerId', 'partnerId']);
-
-      allow read, delete: if isPartnerLinkParticipant();
-
-      allow update: if isPartnerLinkParticipant()
-        && request.resource.data.ownerId == resource.data.ownerId;
+      allow read, write: if false;
     }
   }
 }

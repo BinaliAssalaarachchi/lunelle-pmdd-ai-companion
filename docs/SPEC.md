@@ -296,7 +296,34 @@ users/{userId}
           model: string
           promptVersion: string
         }
+
+partnerLinks/{linkId}              # TOP-LEVEL — not under users/{userId}
+  ownerId: string                  # the tracked user's uid (immutable)
+  partnerId: string | null         # set on accept; null while pending (invite-code flow)
+  partnerEmail: string | null      # optional invite hint only — not an access grant
+  inviteCodeHash: string           # hash of high-entropy invite code (plaintext returned once on create)
+  status: 'pending' | 'active' | 'revoked'
+  permissions: {
+    cycleReminders: boolean        # default true — cycle day/phase/reminders only
+    generalSupportGuidance: boolean # default true — non-clinical guidance (not from logs)
+    symptomDetails: boolean        # default false — curated 11 DRSP + Impact when on
+    personalNotes: boolean         # default false — curated free-text notes only when on
+    privateAiInsights: boolean     # default false — curated insight summary only when on
+  }
+  createdAt: Timestamp
+  updatedAt: Timestamp
+  acceptedAt: Timestamp | null
+  revokedAt: Timestamp | null
+  revokedBy: string | null
+  # Doctor Coach conversations are NEVER a permission and NEVER shared
 ```
+
+**Partner-sharing rule:** `partnerLinks` lives at the **top level** because a link connects two distinct people. It must **not** be nested under `users/{userId}`. Link documents track relationship status and permission toggles only — they never embed clinical payload. Partners never read `users/{ownerId}/…` via Firestore rules or client queries; curated views come only from the gated Express endpoint (see Feature — Partner Sharing).
+
+**Permission mapping (Option A — approved):**
+- `symptomDetails` (default off) → curated **11-item DRSP severities + Impact** only (never raw Firestore documents).
+- `personalNotes` (default off) → curated **free-text `notes`** only (never unrelated private fields).
+- Enabling a permission never means exposing raw underlying documents — only a server-built curated DTO.
 
 **Removed from the log schema:** the legacy single `distress` field. There is **no** `distress` / `overallDistress` alias and no silent fallback — every former call site must read/write `impact` (or a derived Impact aggregate) explicitly. See the distress→Impact replacement table in the DRSP migration plan.
 
@@ -350,8 +377,15 @@ Single shared crisis guardrail — **one** function both server paths call (no d
 | `POST` | `/api/reports/personal` | Generate personal summary (HTML/JSON) | Mock user ID |
 | `POST` | `/api/reports/clinician` | Generate clinician PDF | Mock user ID |
 | `POST` | `/api/coach/message` | Doctor Conversation Coach turn (intent gate → optional Gemini → validate) | Bearer auth |
+| `POST` | `/api/partner/invite` | Owner creates pending partner invitation (returns invite code once) | Bearer auth (owner) |
+| `POST` | `/api/partner/accept` | Partner accepts pending invite by code | Bearer auth (partner) |
+| `POST` | `/api/partner/decline` | Partner declines pending invite | Bearer auth (partner) |
+| `POST` | `/api/partner/revoke` | Owner or partner revokes a link | Bearer auth (participant) |
+| `PATCH` | `/api/partner/links/:linkId/permissions` | Owner updates permission toggles | Bearer auth (owner) |
+| `GET` | `/api/partner/links` | List links for the signed-in user (metadata only) | Bearer auth |
+| `GET` | `/api/partner/view` | Curated partner view — server checks active `partnerLinks` + permissions, then returns only allowed slices | Bearer auth (partner) |
 
-**Note:** Symptom CRUD goes directly from the client to Firestore in MVP (no Express proxy). Server endpoints are only for operations that need secrets (Gemini) or server-side rendering (PDF).
+**Note:** Symptom CRUD goes directly from the client to Firestore in MVP (no Express proxy). Server endpoints are for operations that need secrets (Gemini), server-side rendering (PDF), or **privacy-sensitive filtering** (partner view). Partner access must never be implemented as a direct Firestore read of the owner’s logs/insights.
 
 ---
 
@@ -760,6 +794,76 @@ These are **current** limitations of the as-built Coach. They were reviewed afte
    - “does my tracking mean I have PMDD”
 
 Closing these gaps is **out of scope for this documentation pass** and is not treated as an accidental omission of the safety design.
+
+---
+
+### Feature — Partner Sharing (designed)
+
+**Status:** Designed and approved. Phase 2 implements **server-mediated link lifecycle** (invite / accept / decline / revoke / owner permission updates). Curated clinical partner view is a later phase.
+
+**Goal:** An **optional** feature where she can invite a trusted partner. The partner receives a **curated, privacy-safe view** — never raw clinical data by default.
+
+#### Purpose and non-goals
+
+| In scope | Out of scope / hard rules |
+|---|---|
+| Invite → accept → active link between owner and partner | Raw dump of logs, notes, or insights by default |
+| Granular permission toggles owned on the link | Partner reading `users/{ownerId}/…` via Firestore rules or client queries |
+| Curated view assembled server-side from current permissions | Sharing Doctor Coach conversations under any setting |
+| Either party revoking the link at any time | Treating Coach as a permission toggle |
+| Express + Admin SDK as authoritative lifecycle | Client-written clinical access grants |
+
+#### Invite / accept / revoke (Express-mediated)
+
+Lifecycle writes go through Express + Firebase Admin SDK. Firestore rules still deny unauthorized client access to `partnerLinks` and **never** grant partners access to owner clinical paths.
+
+1. **Invite** — Owner calls the invite API. Server creates `partnerLinks/{linkId}` with `status: 'pending'`, default `permissions`, and a high-entropy invite code (store **hash** only; return plaintext code once). Owner cannot invite themselves.
+2. **Accept** — Partner (signed in) redeems the invite code. Server sets `partnerId`, `status: 'active'`. Already-used, revoked, or invalid codes fail.
+3. **Decline** — Partner declines a pending invite → `status: 'revoked'` (cannot later accept that code).
+4. **Revoke** — **Either** owner or partner may revoke an active (or pending) link. Revoked links **cannot** be reactivated. Gated view rejects them server-side.
+5. **Permissions** — **Owner only** may update permission toggles. Partner attempts to escalate must fail.
+
+#### Permission toggles (defaults) — Option A
+
+| Permission | Default | Curated meaning when explicitly `true` |
+|---|---|---|
+| `cycleReminders` | **on** | Cycle day, cycle phase, upcoming-period / cycle reminders only — **no** symptom scores, notes, or AI insights |
+| `generalSupportGuidance` | **on** | General, non-clinical supportive guidance and communication/patience suggestions — **must not** be derived from private symptom logs |
+| `symptomDetails` | **off** | Curated **11 DRSP symptom severities + Impact** only — never raw Firestore documents |
+| `personalNotes` | **off** | Curated free-text personal **notes** only — never unrelated private fields |
+| `privateAiInsights` | **off** | Curated safe insight **summary** only — never raw insight docs, evidence packets, or Coach content |
+
+**Default-deny:** missing, malformed, undefined, or unverifiable permission values are treated as **false**.
+
+**Hard exclusion (not a toggle):** Doctor Conversation Coach turns/conversations are **excluded from partner-sharing entirely**, under every permission combination. There is no `coach` / `doctorCoach` permission field. No partner API path may return Coach conversations.
+
+**Privacy principle:** Enabling a permission does **not** mean returning raw underlying data. Every permission maps to a curated server-generated DTO with only the minimum information needed.
+
+#### Architecture — single gated clinical endpoint
+
+```mermaid
+flowchart LR
+  PartnerUI[Partner client] -->|Bearer token| Gate["GET /api/partner/view"]
+  Gate -->|load link| Links[(partnerLinks)]
+  Gate -->|Admin SDK only if active + allowed| OwnerData[(users/ownerId logs insights)]
+  Gate -->|curated JSON only| PartnerUI
+  PartnerUI -.->|forbidden| OwnerData
+```
+
+**Invariant:** Partner access **never** reads her data directly through Firestore security rules or client queries, under any permission state. All partner-facing clinical/support content routes through **one** gated Express endpoint (`GET /api/partner/view`) that:
+
+1. Authenticates the caller (`requireAuth`)
+2. Loads the real `partnerLinks` document and verifies the requester is a linked participant (partner for the curated view)
+3. Requires `status === 'active'`
+4. Reads current `permissions` **server-side** with default-deny
+5. Uses Admin SDK to load only what is needed from the owner’s data
+6. Returns a **curated** payload filtered to allowed slices — keeping sensitive filtering logic in one place
+
+Pending, revoked, missing, or unauthorized links → **no** curated clinical view (server rejects).
+
+#### Data model reference
+
+See §5 `partnerLinks/{linkId}` (top-level). Permissions and status live on the link; clinical payloads are ephemeral API responses, not embedded on the link document.
 
 ---
 

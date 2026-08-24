@@ -6,7 +6,7 @@ export function LogoMark({ className = 'h-9 w-9' }) {
       src={logoMark}
       alt=""
       aria-hidden="true"
-      className={`${className} shrink-0 rounded-full object-cover`}
+      className={`${className} shrink-0 rounded-full border border-pine/35 object-cover`}
     />
   );
 }

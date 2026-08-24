@@ -5,6 +5,7 @@ import insightsRouter from './routes/insights.js';
 import reportsRouter from './routes/reports.js';
 import accountRouter from './routes/account.js';
 import coachRouter from './routes/coach.js';
+import partnerRouter from './routes/partner.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -36,6 +37,7 @@ app.use('/api/insights', insightsRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/account', accountRouter);
 app.use('/api/coach', coachRouter);
+app.use('/api/partner', partnerRouter);
 app.use(errorHandler);
 
 app.listen(port, '0.0.0.0', () => {
