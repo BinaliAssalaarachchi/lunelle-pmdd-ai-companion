@@ -148,23 +148,25 @@ function extractJsonObject(text) {
 }
 
 async function generateJsonOnce(genAI, modelName, { systemInstruction, userPrompt }) {
-  const model = genAI.getGenerativeModel({
-    model: modelName,
-    systemInstruction,
-    generationConfig: {
-      temperature: 0.35,
-      responseMimeType: 'application/json',
-      responseSchema: INSIGHT_RESPONSE_SCHEMA,
-    },
-  });
-
   let lastError;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      const result = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+      const result = await genAI.models.generateContent({
+        model: modelName,
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: userPrompt }],
+          },
+        ],
+        config: {
+          systemInstruction,
+          temperature: 0.35,
+          responseMimeType: 'application/json',
+          responseSchema: INSIGHT_RESPONSE_SCHEMA,
+        },
       });
-      const text = result.response.text();
+      const text = result.text;
       const parsed = extractJsonObject(text);
       if (!parsed) {
         const error = new Error('Gemini returned non-JSON insight content');
