@@ -280,60 +280,37 @@ function extractJsonObject(text) {
   }
 }
 
-async function generateCoachJsonOnce(
-  genAI,
-  modelName,
-  { systemInstruction, userPrompt },
-) {
-  let lastError;
+async function generateCoachJsonOnce(genAI, modelName, { systemInstruction, userPrompt }) {
+  const model = genAI.getGenerativeModel({
+    model: modelName,
+    systemInstruction,
+    generationConfig: {
+      temperature: 0.3,
+      responseMimeType: 'application/json',
+      responseSchema: COACH_RESPONSE_SCHEMA,
+    },
+  });
 
+  let lastError;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      const result = await genAI.models.generateContent({
-        model: modelName,
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: userPrompt }],
-          },
-        ],
-        config: {
-          systemInstruction,
-          temperature: 0.3,
-          responseMimeType: 'application/json',
-          responseSchema: COACH_RESPONSE_SCHEMA,
-        },
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
       });
-
-      const parsed = extractJsonObject(result.text);
-
+      const parsed = extractJsonObject(result.response.text());
       if (!parsed) {
-        const error = new Error(
-          'Gemini returned non-JSON coach content',
-        );
+        const error = new Error('Gemini returned non-JSON coach content');
         error.status = 502;
         error.code = 'GEMINI_INVALID_JSON';
         throw error;
       }
-
-      return {
-        parsed,
-        model: modelName,
-      };
+      return { parsed, model: modelName };
     } catch (error) {
       lastError = error;
-
-      if (
-        !isRetryableGeminiError(error) ||
-        attempt === 2
-      ) {
-        break;
-      }
-
+      if (!isRetryableGeminiError(error) || attempt === 2) break;
       await sleep(700 * (attempt + 1));
     }
   }
-
   throw lastError;
 }
 
@@ -419,10 +396,7 @@ export function toCoachApiResponse(gate, extras = {}) {
       blockedReason: gate.allowModelGeneration ? null : gate.reason,
     },
     redirect: gate.reply.redirect || null,
-    // Offer is only for blocked/redirect turns. A successful briefing used to
-    // send "Would you like this to sound more like your own words?" as offer,
-    // which hid the doctor script in the UI.
-    offer: gate.reply.redirect ? gate.reply.offer || null : null,
+    offer: gate.reply.offer || null,
     source: extras.source || (usedFallback ? 'fallback' : 'gate'),
     fallbackReason: extras.fallbackReason || null,
   };

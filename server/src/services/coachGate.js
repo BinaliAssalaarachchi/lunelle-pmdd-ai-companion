@@ -242,9 +242,6 @@ function communicationResult(message, evidence, classified) {
       mentionPoints: pack.mentionPoints,
       detailExplanation: pack.detailExplanation,
       doctorQuestions: pack.doctorQuestions,
-      offer: pack.doctorScript
-        ? 'Would you like this to sound more like your own words?'
-        : null,
     },
   });
 }

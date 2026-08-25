@@ -24,6 +24,7 @@
     "verify:deployment-config": "node src/scripts/verify-deployment-config.js"
   },
   "dependencies": {
+    "@google/genai": "^2.18.0",
     "@google/generative-ai": "^0.21.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

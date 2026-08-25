@@ -115,7 +115,8 @@ export function CoachReply({ reply, onFollowUp }) {
       : primaryAction?.label;
 
   const showConversation =
-    !reply.redirect && !reply.offer && (userReported.length || hasBriefing || facts.length);
+    hasBriefing ||
+    (!reply.redirect && !reply.offer && (userReported.length || facts.length));
 
   return (
     <article className="max-w-[36rem] space-y-2">

@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
   isSeverityPresent,
   SEVERITY_LABELS,
@@ -8,44 +8,34 @@ import { IMPACT_ITEMS, SYMPTOMS } from '../../../shared/symptoms.js';
 import { summarizeByPhase } from './symptomStats.js';
 
 export const PROMPT_VERSION = 'lunelle-insights-v1';
-
-const PRIMARY_MODEL =
-  process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-
-const FALLBACK_MODELS = [
-  'gemini-2.5-flash',
-];
+const PRIMARY_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+const FALLBACK_MODELS = ['gemini-3.5-flash', 'gemini-3.1-flash'];
 
 export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export function isRetryableGeminiError(error) {
-  const status =
-    error?.status ||
-    error?.statusCode ||
-    error?.response?.status;
-
-  return status === 429 || status === 500 || status === 502 || status === 503;
+  const status = error?.status;
+  return status === 503 || status === 429;
 }
 
-/**
- * Vertex AI client using Google Cloud Application Default Credentials.
- *
- * No GEMINI_API_KEY is required.
- */
+/** Shared API-key gate used by single-shot insights and the Lunelle agent. */
+export function requireGeminiApiKey() {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    const error = new Error(
+      'GEMINI_API_KEY is not configured. Add it to server/.env to generate insights.',
+    );
+    error.status = 503;
+    error.code = 'GEMINI_API_KEY_MISSING';
+    throw error;
+  }
+  return apiKey;
+}
+
 export function createGeminiClient() {
-  const project =
-    process.env.GOOGLE_CLOUD_PROJECT || 'lunelle-pmdd-ai';
-
-  const location =
-    process.env.GOOGLE_CLOUD_LOCATION || 'global';
-
-  return new GoogleGenAI({
-    vertexai: true,
-    project,
-    location,
-  });
+  return new GoogleGenerativeAI(requireGeminiApiKey());
 }
 
 export function getGeminiModelCandidates() {
@@ -55,34 +45,22 @@ export function getGeminiModelCandidates() {
 }
 
 async function generateWithModel(genAI, modelName, prompt) {
+  const model = genAI.getGenerativeModel({ model: modelName });
   let lastError;
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      const response = await genAI.models.generateContent({
-        model: modelName,
-        contents: prompt,
-      });
-
-      const text = response.text;
-
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
       if (!text?.trim()) {
         const error = new Error('Gemini returned an empty response');
         error.status = 502;
         throw error;
       }
-
-      return {
-        content: text.trim(),
-        model: modelName,
-      };
+      return { content: text.trim(), model: modelName };
     } catch (error) {
       lastError = error;
-
-      if (!isRetryableGeminiError(error) || attempt === 2) {
-        break;
-      }
-
+      if (!isRetryableGeminiError(error) || attempt === 2) break;
       await sleep(800 * (attempt + 1));
     }
   }
@@ -92,15 +70,12 @@ async function generateWithModel(genAI, modelName, prompt) {
 
 export function buildInsightPrompt({ logs, type, cycleRange }) {
   const phaseSummary = summarizeByPhase(logs);
-
   const symptomCatalog = SYMPTOMS.map(
     (s) => `- ${s.id} (${s.category}): ${s.label}`,
   ).join('\n');
-
   const impactCatalog = IMPACT_ITEMS.map(
     (item) => `- ${item.id}: ${item.label}`,
   ).join('\n');
-
   const severityScale = Object.entries(SEVERITY_LABELS)
     .map(([value, label]) => `${value}=${label}`)
     .join(', ');
@@ -113,19 +88,9 @@ export function buildInsightPrompt({ logs, type, cycleRange }) {
         .slice(0, 4)
         .map(([id, v]) => `${id}:${v}`)
         .join(', ');
-
       const impact = log.impact || {};
-
-      const impactStr =
-        `p:${impact.productivity ?? 1}/` +
-        `a:${impact.activities ?? 1}/` +
-        `r:${impact.relationships ?? 1}`;
-
-      return (
-        `${log.date} day=${log.cycleDay} ` +
-        `phase=${log.cyclePhase} ` +
-        `impact=${impactStr} [${top}]`
-      );
+      const impactStr = `p:${impact.productivity ?? 1}/a:${impact.activities ?? 1}/r:${impact.relationships ?? 1}`;
+      return `${log.date} day=${log.cycleDay} phase=${log.cyclePhase} impact=${impactStr} [${top}]`;
     })
     .join('\n');
 
@@ -173,15 +138,9 @@ export async function generateInsightContent(prompt) {
   const candidates = getGeminiModelCandidates();
 
   let lastError;
-
   for (const modelName of candidates) {
     try {
-      const generated = await generateWithModel(
-        genAI,
-        modelName,
-        prompt,
-      );
-
+      const generated = await generateWithModel(genAI, modelName, prompt);
       return {
         content: generated.content,
         model: generated.model,
@@ -189,14 +148,8 @@ export async function generateInsightContent(prompt) {
       };
     } catch (error) {
       lastError = error;
-
-      if (!isRetryableGeminiError(error)) {
-        break;
-      }
-
-      console.warn(
-        `Gemini model ${modelName} unavailable. Trying fallback...`,
-      );
+      if (!isRetryableGeminiError(error)) break;
+      console.warn(`Gemini model ${modelName} unavailable (${error.status}). Trying fallback…`);
     }
   }
 
@@ -204,9 +157,7 @@ export async function generateInsightContent(prompt) {
     lastError?.message ||
       'Gemini is temporarily unavailable. Please try again in a moment.',
   );
-
   error.status = lastError?.status || 503;
   error.code = 'GEMINI_UNAVAILABLE';
-
   throw error;
 }

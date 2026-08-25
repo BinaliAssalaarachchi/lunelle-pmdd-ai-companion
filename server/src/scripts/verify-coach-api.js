@@ -318,6 +318,8 @@ async function main() {
     assert(allowed.reflection.userReported.length > 0, 'missing reflection');
     assert(allowed.evidence.facts.length > 0, 'missing evidence facts');
     assert(allowed.doctorScript, 'missing doctorScript');
+    assert(!allowed.offer, 'successful briefing should not send a redirect offer');
+    assert(!allowed.redirect, 'successful briefing should not redirect');
     assert(Array.isArray(allowed.mentionPoints) && allowed.mentionPoints.length > 0, 'missing mentionPoints');
     assert(allowed.detailExplanation, 'missing detailExplanation');
     assert(Array.isArray(allowed.doctorQuestions) && allowed.doctorQuestions.length > 0, 'missing doctorQuestions');
