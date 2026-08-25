@@ -7,6 +7,7 @@ import accountRouter from './routes/account.js';
 import coachRouter from './routes/coach.js';
 import partnerRouter from './routes/partner.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { isFirebaseAdminConfigured } from './lib/firebase-admin.js';
 import {
   createCorsOriginDelegate,
   describeCorsMode,
@@ -36,12 +37,10 @@ app.use(express.json({ limit: '2mb' }));
 app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
-    geminiConfigured: Boolean(process.env.GEMINI_API_KEY),
-    firebaseConfigured: Boolean(
-      process.env.FIREBASE_PROJECT_ID &&
-        process.env.FIREBASE_CLIENT_EMAIL &&
-        process.env.FIREBASE_PRIVATE_KEY,
+    geminiConfigured: Boolean(
+      process.env.GEMINI_API_KEY || process.env.K_SERVICE,
     ),
+    firebaseConfigured: isFirebaseAdminConfigured(),
   });
 });
 

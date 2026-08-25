@@ -17,7 +17,7 @@ It helps you log how you feel in about two minutes, see luteal-phase patterns in
 
 ## How to use
 
-Open the live app (or run locally using **Setup and run** below). Sign in, or tap **Try Demo Account** on the login screen.
+Open **https://lunelle-pmdd-ai.web.app**. Sign in, or tap **Try Demo Account** on the login screen.
 
 1. **Track** — daily check-in (symptoms + Impact)
 2. **Home** — cycle position and trends

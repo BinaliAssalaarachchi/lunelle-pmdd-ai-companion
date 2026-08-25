@@ -5,11 +5,30 @@ let app;
 let initError = null;
 
 export function isFirebaseAdminConfigured() {
-  return Boolean(
+  if (
     process.env.FIREBASE_PROJECT_ID &&
-      process.env.FIREBASE_CLIENT_EMAIL &&
-      process.env.FIREBASE_PRIVATE_KEY,
-  );
+    process.env.FIREBASE_CLIENT_EMAIL &&
+    process.env.FIREBASE_PRIVATE_KEY
+  ) {
+    return true;
+  }
+  // Cloud Run: use the service account via Application Default Credentials.
+  return Boolean(process.env.K_SERVICE);
+}
+
+function adminCredential() {
+  if (
+    process.env.FIREBASE_PROJECT_ID &&
+    process.env.FIREBASE_CLIENT_EMAIL &&
+    process.env.FIREBASE_PRIVATE_KEY
+  ) {
+    return admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    });
+  }
+  return admin.credential.applicationDefault();
 }
 
 function ensureApp() {
@@ -23,12 +42,13 @@ function ensureApp() {
 
   if (!app) {
     try {
+      const projectId =
+        process.env.FIREBASE_PROJECT_ID ||
+        process.env.GOOGLE_CLOUD_PROJECT ||
+        process.env.GCLOUD_PROJECT;
       app = admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        }),
+        credential: adminCredential(),
+        projectId: projectId || undefined,
       });
     } catch (error) {
       initError = error;
